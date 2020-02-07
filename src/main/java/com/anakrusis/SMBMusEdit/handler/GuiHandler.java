@@ -1,26 +1,24 @@
 package com.anakrusis.SMBMusEdit.handler;
 
+import com.anakrusis.SMBMusEdit.SMBMusEdit;
+import com.anakrusis.SMBMusEdit.render.Camera;
 import com.anakrusis.SMBMusEdit.song.Song;
 import com.anakrusis.SMBMusEdit.song.Songs;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
-import javafx.util.converter.NumberStringConverter;
 
 public class GuiHandler {
 
     public static Song songSelected;
+    public static Camera camera = new Camera(0,0);
 
     // file
     static Menu menuFile = new Menu("File");
@@ -100,6 +98,10 @@ public class GuiHandler {
         mainPane.setCenter(pianoRoll);
         mainPane.setTop(menuBar);
         mainPane.setLeft(leftPane);
+
+        exit.setOnAction( action -> {
+            SMBMusEdit.primaryStage.close();
+        });
     }
 
     public static void onSongChange(){

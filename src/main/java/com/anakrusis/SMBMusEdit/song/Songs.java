@@ -29,5 +29,6 @@ public class Songs {
         for (int i = 0; i < 33; i++){
             Song OVERWORLD = new Song("Overworld " + (i + 1), true);
         }
+        SONG_DEATH.getPulse2Notes().add( new Note());
     }
 }

@@ -88,4 +88,16 @@ public class Song {
     public int getNoiseStart() {
         return noiseStart;
     }
+
+    public ArrayList<Note> getPulse1Notes() {
+        return pulse1Notes;
+    }
+
+    public ArrayList<Note> getPulse2Notes() {
+        return pulse2Notes;
+    }
+
+    public ArrayList<Note> getTriangleNotes() {
+        return triangleNotes;
+    }
 }
