@@ -1,6 +1,7 @@
 package com.anakrusis.SMBMusEdit.handler;
 
 import com.anakrusis.SMBMusEdit.SMBMusEdit;
+import com.anakrusis.SMBMusEdit.song.PitchPreset;
 import com.anakrusis.SMBMusEdit.song.Song;
 import com.anakrusis.SMBMusEdit.song.Songs;
 import com.anakrusis.SMBMusEdit.song.TempoPreset;
@@ -22,8 +23,9 @@ public class FileReader {
             }
             SMBMusEdit.ROMData = rom;
 
-            // Initializing the global note duration values
+            // Initializing the global note duration values and global pitch values
             TempoPresets.init();
+            PitchPresets.init();
 
             int pointerStartByte = 0x791d;
             for (int i = 0; i < Songs.songs.size(); i++){

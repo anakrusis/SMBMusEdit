@@ -66,8 +66,8 @@ public class PianoRollHandler {
 
             double dragX = action.getX() - lastDragX;
             double dragY = action.getY() - lastDragY;
-            GuiHandler.camera.setX( GuiHandler.camera.getX() + dragX );
-            GuiHandler.camera.setY( GuiHandler.camera.getY() + dragY );
+            GuiHandler.camera.setX( GuiHandler.camera.getX() - dragX );
+            GuiHandler.camera.setY( GuiHandler.camera.getY() - dragY );
             lastDragX = action.getX();
             lastDragY = action.getY();
         });

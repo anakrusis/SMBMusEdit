@@ -1,5 +1,7 @@
 package com.anakrusis.SMBMusEdit.song;
 
+import com.anakrusis.SMBMusEdit.handler.GuiHandler;
+
 public class Note {
     int pitch;
     int onset;
@@ -33,5 +35,17 @@ public class Note {
 
     public void setOnset(int onset) {
         this.onset = onset;
+    }
+
+    public double getScreenX() {
+        return (onset * GuiHandler.camera.getZoom()) - GuiHandler.camera.getX();
+    }
+
+    public double getScreenY() {
+        return -(this.pitch * 10) - GuiHandler.camera.getY();
+    }
+
+    public double getScreenWidth(){
+        return this.getDuration() * GuiHandler.camera.getZoom() * 0.95;
     }
 }

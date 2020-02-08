@@ -18,7 +18,7 @@ import javafx.scene.layout.GridPane;
 public class GuiHandler {
 
     public static Song songSelected;
-    public static Camera camera = new Camera(0,0);
+    public static Camera camera = new Camera(0,-800);
 
     // file
     static Menu menuFile = new Menu("File");
@@ -113,6 +113,6 @@ public class GuiHandler {
         _noiseStart.setText( String.format( "%04X", songSelected.getNoiseStart() ));
 
         camera.setX(0);
-        camera.setY(0);
+        camera.setY(-800);
     }
 }
