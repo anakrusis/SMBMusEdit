@@ -6,9 +6,16 @@ import com.anakrusis.SMBMusEdit.song.Song;
 import com.anakrusis.SMBMusEdit.song.Songs;
 import javafx.animation.AnimationTimer;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 public class PianoRollHandler {
+
+    public static double lastDragX = 0;
+    public static double lastDragY = 0;
+
     public static void init(){
         new AnimationTimer()
         {
@@ -35,16 +42,27 @@ public class PianoRollHandler {
             }
         }.start();
 
-        GuiHandler.pianoRoll.setOnDragDetected(action -> {
+        GuiHandler.pianoRoll.setOnMouseClicked(action -> {
 
         });
+
         GuiHandler.pianoRoll.setOnMouseDragged(action -> {
 
-        });
-        GuiHandler.pianoRoll.setOnKeyPressed(action -> {
-            if (action.getCode() == KeyCode.A){
-                GuiHandler.camera.setX( GuiHandler.camera.getX() + 1 );
+            if (action.isStillSincePress()){
+                lastDragX = action.getX();
+                lastDragY = action.getY();
             }
+
+            double dragX = action.getX() - lastDragX;
+            double dragY = action.getY() - lastDragY;
+            GuiHandler.camera.setX( GuiHandler.camera.getX() + dragX );
+            GuiHandler.camera.setY( GuiHandler.camera.getY() + dragY );
+            lastDragX = action.getX();
+            lastDragY = action.getY();
+        });
+
+        GuiHandler.pianoRoll.setOnKeyPressed(action -> {
+
         });
     }
 }
