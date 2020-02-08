@@ -34,7 +34,18 @@ public class PianoRollHandler {
                 GuiHandler.gc.setFill( new Color(0, 0, 0, 1.0) );
                 GuiHandler.gc.fillRect(0,0, 1800,1000);
 
+                GuiHandler.gc.setFill( new Color(1, 0, 1, 1.0) );
                 for (Note note : GuiHandler.songSelected.getPulse2Notes()){
+                    RenderNote.renderNote( note, GuiHandler.camera );
+                }
+
+                GuiHandler.gc.setFill( new Color(0.5, 0, 0.7, 1.0) );
+                for (Note note : GuiHandler.songSelected.getPulse1Notes()){
+                    RenderNote.renderNote( note, GuiHandler.camera );
+                }
+
+                GuiHandler.gc.setFill( new Color(0, 0, 1, 1.0) );
+                for (Note note : GuiHandler.songSelected.getTriangleNotes()){
                     RenderNote.renderNote( note, GuiHandler.camera );
                 }
 

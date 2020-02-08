@@ -7,6 +7,10 @@ public class Song {
     private int headerStart = 0x00;
     boolean hasNoise;
 
+    // tick in which either the song goes to the next pattern, or ends
+    // dictated by square 2 giving the value 00 at this time
+    private int endTick;
+
     private int tempoPreset = 0x00;
     private int pulse1Start = 0x00;
     private int pulse2Start = 0x00;
@@ -99,5 +103,13 @@ public class Song {
 
     public ArrayList<Note> getTriangleNotes() {
         return triangleNotes;
+    }
+
+    public void setEndTick(int endTick) {
+        this.endTick = endTick;
+    }
+
+    public int getEndTick() {
+        return endTick;
     }
 }

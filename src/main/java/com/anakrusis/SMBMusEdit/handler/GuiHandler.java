@@ -111,5 +111,8 @@ public class GuiHandler {
         pulse1Start.setText( String.format( "%04X", songSelected.getPulse1Start() ) );
         trngleStart.setText( String.format( "%04X", songSelected.getTriangleStart() ) );
         _noiseStart.setText( String.format( "%04X", songSelected.getNoiseStart() ));
+
+        camera.setX(0);
+        camera.setY(0);
     }
 }

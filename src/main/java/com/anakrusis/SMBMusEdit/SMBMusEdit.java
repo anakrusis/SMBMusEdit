@@ -12,7 +12,6 @@ import javafx.stage.Stage;
 
 public class SMBMusEdit extends Application {
 
-    public static byte[] rawData;
     public static int[] ROMData;
 
     public static Stage primaryStage;

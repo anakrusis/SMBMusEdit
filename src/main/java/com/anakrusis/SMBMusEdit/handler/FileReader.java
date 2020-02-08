@@ -3,6 +3,7 @@ package com.anakrusis.SMBMusEdit.handler;
 import com.anakrusis.SMBMusEdit.SMBMusEdit;
 import com.anakrusis.SMBMusEdit.song.Song;
 import com.anakrusis.SMBMusEdit.song.Songs;
+import com.anakrusis.SMBMusEdit.song.TempoPreset;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,14 +12,18 @@ import java.nio.file.Paths;
 public class FileReader {
     public static void init() {
         try{
-            byte[] raw = SMBMusEdit.rawData;
-            int[]  rom = SMBMusEdit.ROMData;
+            byte[] raw;
+            int[]  rom;
             // Converting raw data (java reads it as signed) to usable data (unsigned integers)
             raw = Files.readAllBytes(Paths.get("rom\\original mario.nes"));
             rom = new int[ raw.length ];
             for (int i = 0; i < raw.length; i++){
                 rom[i] = raw[i] & 0xff;
             }
+            SMBMusEdit.ROMData = rom;
+
+            // Initializing the global note duration values
+            TempoPresets.init();
 
             int pointerStartByte = 0x791d;
             for (int i = 0; i < Songs.songs.size(); i++){
@@ -52,6 +57,8 @@ public class FileReader {
                     int noiseStart = romAddress + rom[pointerStartByte + pointertarget + 5];
                     song.setNoiseStart(noiseStart);
                 }
+
+                NoteParser.parseNotes(song);
             }
 
         } catch (IOException e){
