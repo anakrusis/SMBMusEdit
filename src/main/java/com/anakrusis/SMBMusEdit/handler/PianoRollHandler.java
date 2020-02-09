@@ -19,6 +19,8 @@ public class PianoRollHandler {
     public static double lastDragX = 0;
     public static double lastDragY = 0;
 
+    public static double playLinePos = 500;
+
     public static void init(){
 
         Image pianoRoll = new Image("piano.png");
@@ -55,9 +57,16 @@ public class PianoRollHandler {
                     RenderNote.renderNote( note, GuiHandler.camera );
                 }
 
-                for (int i = -7; i < -2; i++){
+                for (int i = -8; i < -3; i++){
                     double pianoY = (120 * i) - GuiHandler.camera.getY() + 10;
                     GuiHandler.gc.drawImage(pianoRoll, 0, pianoY);
+                }
+
+                GuiHandler.gc.setFill( new Color (1, 1, 1, 1));
+                GuiHandler.gc.fillRect(playLinePos, 0, 2, 1000);
+
+                if (GuiHandler.followMode && !SongPlayer.isPaused()){
+                    GuiHandler.camera.setX( (SongPlayer.getTime() * GuiHandler.camera.getZoom()) - playLinePos );
                 }
 
                 SongPlayer.update();

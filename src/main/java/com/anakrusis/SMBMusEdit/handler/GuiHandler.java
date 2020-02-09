@@ -19,7 +19,8 @@ import javafx.scene.layout.GridPane;
 public class GuiHandler {
 
     public static Song songSelected;
-    public static Camera camera = new Camera(-120,-800);
+    public static Camera camera = new Camera(-120,-980);
+    public static boolean followMode = true;
 
     // file
     static Menu menuFile = new Menu("File");
@@ -56,7 +57,7 @@ public class GuiHandler {
     public static MenuBar menuBar = new MenuBar();
     public static BorderPane mainPane = new BorderPane();
     public static FlowPane leftPane = new FlowPane(Orientation.VERTICAL);
-    public static Scene scene = new Scene(mainPane, 800, 650);
+    public static Scene scene = new Scene(mainPane, 1000, 650);
     public static Canvas pianoRoll = new Canvas(1800, 1000);
     public static GraphicsContext gc = pianoRoll.getGraphicsContext2D();
 
@@ -114,11 +115,12 @@ public class GuiHandler {
         _noiseStart.setText( String.format( "%04X", songSelected.getNoiseStart() ));
 
         camera.setX(-120);
-        camera.setY(-800);
+        camera.setY(-980);
 
         // Resets the player and stops all notes
         SongPlayer.getMidiChannels()[0].allNotesOff();
         SongPlayer.getMidiChannels()[1].allNotesOff();
+        SongPlayer.getMidiChannels()[2].allNotesOff();
         SongPlayer.setTime(0);
     }
 }

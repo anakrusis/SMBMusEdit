@@ -46,6 +46,6 @@ public class Note {
     }
 
     public double getScreenWidth(){
-        return this.getDuration() * GuiHandler.camera.getZoom() * 0.95;
+        return this.getDuration() * GuiHandler.camera.getZoom() - 2;
     }
 }

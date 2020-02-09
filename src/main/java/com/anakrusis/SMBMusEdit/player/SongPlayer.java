@@ -23,6 +23,7 @@ public class SongPlayer {
             midiSynth.loadInstrument(instr[0]);
             midiChannels[0].programChange(80);
             midiChannels[1].programChange(80);
+            midiChannels[2].programChange(80);
 
         } catch (MidiUnavailableException e){
 
@@ -44,11 +45,19 @@ public class SongPlayer {
                 midiChannels[1].noteOff(note.getPitch());
             }
         }
+        for (Note note: GuiHandler.songSelected.getPulse1Notes()){
+            if (note.getOnset() == time){
+                midiChannels[2].noteOn(note.getPitch(), 50);
+            } else if (note.getOnset() + note.getDuration() == time){
+                midiChannels[2].noteOff(note.getPitch());
+            }
+        }
         time++;
         if (time == GuiHandler.songSelected.getEndTick() && loopMode){
             time = 0;
             midiChannels[0].allNotesOff();
             midiChannels[1].allNotesOff();
+            midiChannels[2].allNotesOff();
         }
     }
 
