@@ -29,8 +29,13 @@ public class NoteParser {
             sq2Byte = SMBMusEdit.ROMData[sq2Index];
             if (preset.getDurations().get(sq2Byte) != null) {
                 currentDuration = preset.getDurations().get(sq2Byte);
+
+            // The value 0x04 is hardcoded as a note rest
             }else if (sq2Byte == 0x04) {
                 time += currentDuration;
+
+            // And the value 0x00 is hardcoded as the frame's looping or stopping point
+            // (if the song loops or not)
             }else if (sq2Byte == 0x00){
                 break;
             }else{
@@ -50,12 +55,15 @@ public class NoteParser {
         song.setEndTick(time);
         time = 0;
 
+        // Parsing triangle next, stopping when reaching the pulse 2 endpoint.
         int triIndex = triStart;
         int triByte;
         while (time < song.getEndTick()) {
             triByte = SMBMusEdit.ROMData[triIndex];
             if (preset.getDurations().get(triByte) != null) {
                 currentDuration = preset.getDurations().get(triByte);
+
+            // The value 0x04 is hardcoded as a note rest
             } else if (triByte == 0x04) {
                 time += currentDuration;
             } else {
@@ -71,6 +79,13 @@ public class NoteParser {
                 time += currentDuration;
             }
             triIndex++;
+        }
+        time = 0;
+
+        int sq1Index = sq1Start;
+        int sq1Byte;
+        while (time < song.getEndTick()) {
+            sq1Byte = SMBMusEdit.ROMData[sq1Index];
         }
     }
 }

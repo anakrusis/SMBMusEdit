@@ -1,6 +1,7 @@
 package com.anakrusis.SMBMusEdit.handler;
 
 import com.anakrusis.SMBMusEdit.SMBMusEdit;
+import com.anakrusis.SMBMusEdit.player.SongPlayer;
 import com.anakrusis.SMBMusEdit.render.Camera;
 import com.anakrusis.SMBMusEdit.song.Song;
 import com.anakrusis.SMBMusEdit.song.Songs;
@@ -18,7 +19,7 @@ import javafx.scene.layout.GridPane;
 public class GuiHandler {
 
     public static Song songSelected;
-    public static Camera camera = new Camera(0,-800);
+    public static Camera camera = new Camera(-120,-800);
 
     // file
     static Menu menuFile = new Menu("File");
@@ -112,7 +113,12 @@ public class GuiHandler {
         trngleStart.setText( String.format( "%04X", songSelected.getTriangleStart() ) );
         _noiseStart.setText( String.format( "%04X", songSelected.getNoiseStart() ));
 
-        camera.setX(0);
+        camera.setX(-120);
         camera.setY(-800);
+
+        // Resets the player and stops all notes
+        SongPlayer.getMidiChannels()[0].allNotesOff();
+        SongPlayer.getMidiChannels()[1].allNotesOff();
+        SongPlayer.setTime(0);
     }
 }

@@ -1,14 +1,17 @@
 package com.anakrusis.SMBMusEdit.handler;
 
+import com.anakrusis.SMBMusEdit.player.SongPlayer;
 import com.anakrusis.SMBMusEdit.render.RenderNote;
 import com.anakrusis.SMBMusEdit.song.Note;
 import com.anakrusis.SMBMusEdit.song.Song;
 import com.anakrusis.SMBMusEdit.song.Songs;
 import javafx.animation.AnimationTimer;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 
+import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PianoRollHandler {
@@ -17,6 +20,9 @@ public class PianoRollHandler {
     public static double lastDragY = 0;
 
     public static void init(){
+
+        Image pianoRoll = new Image("piano.png");
+
         new AnimationTimer()
         {
 
@@ -49,6 +55,12 @@ public class PianoRollHandler {
                     RenderNote.renderNote( note, GuiHandler.camera );
                 }
 
+                for (int i = -7; i < -2; i++){
+                    double pianoY = (120 * i) - GuiHandler.camera.getY() + 10;
+                    GuiHandler.gc.drawImage(pianoRoll, 0, pianoY);
+                }
+
+                SongPlayer.update();
                 lastTickSong = GuiHandler.songSelected;
             }
         }.start();

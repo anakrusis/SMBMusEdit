@@ -3,6 +3,7 @@ package com.anakrusis.SMBMusEdit;
 import com.anakrusis.SMBMusEdit.handler.FileReader;
 import com.anakrusis.SMBMusEdit.handler.GuiHandler;
 import com.anakrusis.SMBMusEdit.handler.PianoRollHandler;
+import com.anakrusis.SMBMusEdit.player.SongPlayer;
 import com.anakrusis.SMBMusEdit.song.Song;
 import com.anakrusis.SMBMusEdit.song.Songs;
 import javafx.animation.AnimationTimer;
@@ -25,6 +26,7 @@ public class SMBMusEdit extends Application {
 
         primaryStage = stage;
 
+        SongPlayer.init();
         Songs.init();
         FileReader.init();
         GuiHandler.init();
