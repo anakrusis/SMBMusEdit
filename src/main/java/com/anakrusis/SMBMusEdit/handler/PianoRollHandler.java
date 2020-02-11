@@ -2,7 +2,9 @@ package com.anakrusis.SMBMusEdit.handler;
 
 import com.anakrusis.SMBMusEdit.player.SongPlayer;
 import com.anakrusis.SMBMusEdit.render.RenderNote;
+import com.anakrusis.SMBMusEdit.render.RenderPianoRoll;
 import com.anakrusis.SMBMusEdit.song.Note;
+import com.anakrusis.SMBMusEdit.song.PitchPreset;
 import com.anakrusis.SMBMusEdit.song.Song;
 import com.anakrusis.SMBMusEdit.song.Songs;
 import javafx.animation.AnimationTimer;
@@ -18,12 +20,16 @@ public class PianoRollHandler {
 
     public static double lastDragX = 0;
     public static double lastDragY = 0;
+    public static boolean draggingNote = false;
+    public static Note noteSelected = null;
+    // When clicked, a note plays for 10 ticks and then stops
+    public static int noteSelectedPlayTimer = 10;
 
-    public static double playLinePos = 500;
+    public static double playLinePos = 200;
+
+    public static Image pianoTexture = new Image("piano.png");
 
     public static void init(){
-
-        Image pianoRoll = new Image("piano.png");
 
         new AnimationTimer()
         {
@@ -35,66 +41,99 @@ public class PianoRollHandler {
                 int index = GuiHandler.songList.getSelectionModel().getSelectedIndex();
                 GuiHandler.songSelected = Songs.songs.get(index);
 
-                if (lastTickSong != GuiHandler.songSelected){
-                    GuiHandler.onSongChange();
-                }
-                // Clear the canvas
-                GuiHandler.gc.setFill( new Color(0, 0, 0, 1.0) );
-                GuiHandler.gc.fillRect(0,0, 1800,1000);
-
-                GuiHandler.gc.setFill( new Color(1, 0, 1, 1.0) );
-                for (Note note : GuiHandler.songSelected.getPulse2Notes()){
-                    RenderNote.renderNote( note, GuiHandler.camera );
-                }
-
-                GuiHandler.gc.setFill( new Color(0.5, 0, 0.7, 1.0) );
-                for (Note note : GuiHandler.songSelected.getPulse1Notes()){
-                    RenderNote.renderNote( note, GuiHandler.camera );
-                }
-
-                GuiHandler.gc.setFill( new Color(0, 0, 1, 1.0) );
-                for (Note note : GuiHandler.songSelected.getTriangleNotes()){
-                    RenderNote.renderNote( note, GuiHandler.camera );
-                }
-
-                for (int i = -8; i < -3; i++){
-                    double pianoY = (120 * i) - GuiHandler.camera.getY() + 10;
-                    GuiHandler.gc.drawImage(pianoRoll, 0, pianoY);
-                }
-
-                GuiHandler.gc.setFill( new Color (1, 1, 1, 1));
-                GuiHandler.gc.fillRect(playLinePos, 0, 2, 1000);
+                RenderPianoRoll.renderPianoRoll();
 
                 if (GuiHandler.followMode && !SongPlayer.isPaused()){
                     GuiHandler.camera.setX( (SongPlayer.getTime() * GuiHandler.camera.getZoom()) - playLinePos );
                 }
 
-                SongPlayer.update();
+                if (lastTickSong != GuiHandler.songSelected){
+                    GuiHandler.onSongChange();
+                }
+
+                if (!SongPlayer.isPaused()){
+                    SongPlayer.update();
+                }
+                noteSelectedPlayTimer--;
+                if (noteSelectedPlayTimer == 0){
+                    SongPlayer.stopNote(noteSelected, 0);
+                    noteSelected = null;
+                }
+
                 lastTickSong = GuiHandler.songSelected;
             }
         }.start();
 
-        GuiHandler.pianoRoll.setOnMouseClicked(action -> {
-
+        GuiHandler.pianoRoll.setOnMousePressed(action -> {
+            Song song = GuiHandler.songSelected;
+            for (Note note : song.getPulse2Notes()){
+                if (isPointCollidingInBox(action.getX(), action.getY(), note.getScreenX(), note.getScreenY(), note.getScreenWidth(), 10)){
+                    noteSelected = note;
+                    SongPlayer.playNote(noteSelected, 0);
+                    noteSelectedPlayTimer = 10;
+                }
+            }
+            for (Note note : song.getTriangleNotes()){
+                if (isPointCollidingInBox(action.getX(), action.getY(), note.getScreenX(), note.getScreenY(), note.getScreenWidth(), 10)){
+                    noteSelected = note;
+                    SongPlayer.playNote(noteSelected, 0);
+                    noteSelectedPlayTimer = 10;
+                }
+            }
+            for (Note note : song.getPulse1Notes()){
+                if (isPointCollidingInBox(action.getX(), action.getY(), note.getScreenX(), note.getScreenY(), note.getScreenWidth(), 10)){
+                    noteSelected = note;
+                    SongPlayer.playNote(noteSelected, 0);
+                    noteSelectedPlayTimer = 10;
+                }
+            }
         });
 
         GuiHandler.pianoRoll.setOnMouseDragged(action -> {
 
-            if (action.isStillSincePress()){
+            if (noteSelected != null){
+                int offset = 0;
+                boolean above = false;
+                // The nearest note above the current note
+                if (action.getY() < noteSelected.getScreenY()){
+                    offset = 1;
+                    above = true;
+
+                // The nearest note below the current note
+                }else if (action.getY() > noteSelected.getScreenY() + 10){
+                    offset = -1;
+                    above = false;
+                }else{
+                    lastDragX = action.getX();
+                    lastDragY = action.getY();
+                }
+
+                int newPitch = PitchPresets.SQ2_TRI_PITCH_PRESET.getNearestPitch(noteSelected, offset, above);
+
+                if (newPitch != -1 && newPitch != noteSelected.getPitch()){
+                    SongPlayer.stopNote(noteSelected, 0);
+                    noteSelected.setPitch( newPitch );
+                    SongPlayer.playNote(noteSelected, 0);
+                    noteSelectedPlayTimer = 10;
+                }
+            }else{
+                if (action.isStillSincePress()){
+                    lastDragX = action.getX();
+                    lastDragY = action.getY();
+                }
+
+                double dragX = action.getX() - lastDragX;
+                double dragY = action.getY() - lastDragY;
+                GuiHandler.camera.setX( GuiHandler.camera.getX() - dragX );
+                GuiHandler.camera.setY( GuiHandler.camera.getY() - dragY );
                 lastDragX = action.getX();
                 lastDragY = action.getY();
             }
-
-            double dragX = action.getX() - lastDragX;
-            double dragY = action.getY() - lastDragY;
-            GuiHandler.camera.setX( GuiHandler.camera.getX() - dragX );
-            GuiHandler.camera.setY( GuiHandler.camera.getY() - dragY );
-            lastDragX = action.getX();
-            lastDragY = action.getY();
         });
+    }
 
-        GuiHandler.pianoRoll.setOnKeyPressed(action -> {
-
-        });
+    public static boolean isPointCollidingInBox( double pointx, double pointy, double boxX, double boxY, double boxWidth, double boxHeight){
+        return (pointx > boxX && pointx < (boxX + boxWidth) &&
+                pointy > boxY && pointy < (boxY + boxHeight));
     }
 }

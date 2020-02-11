@@ -7,7 +7,7 @@ import javax.sound.midi.*;
 
 public class SongPlayer {
     static int time;
-    static boolean isPaused;
+    static boolean isPaused = true;
     static boolean loopMode = true;
 
     static MidiChannel[] midiChannels;
@@ -33,32 +33,52 @@ public class SongPlayer {
     public static void update(){
         for (Note note: GuiHandler.songSelected.getPulse2Notes()){
             if (note.getOnset() == time){
-                midiChannels[0].noteOn(note.getPitch(), 50);
+                playNote(note, 0);
             } else if (note.getOnset() + note.getDuration() == time){
-                midiChannels[0].noteOff(note.getPitch());
+                stopNote(note, 0);
             }
         }
         for (Note note: GuiHandler.songSelected.getTriangleNotes()){
             if (note.getOnset() == time){
-                midiChannels[1].noteOn(note.getPitch(), 50);
+                playNote(note, 1);
             } else if (note.getOnset() + note.getDuration() == time){
-                midiChannels[1].noteOff(note.getPitch());
+                stopNote(note, 1);
             }
         }
         for (Note note: GuiHandler.songSelected.getPulse1Notes()){
             if (note.getOnset() == time){
-                midiChannels[2].noteOn(note.getPitch(), 50);
+                playNote(note, 2);
             } else if (note.getOnset() + note.getDuration() == time){
-                midiChannels[2].noteOff(note.getPitch());
+                stopNote(note, 2);
             }
         }
         time++;
-        if (time == GuiHandler.songSelected.getEndTick() && loopMode){
-            time = 0;
+        if (time == GuiHandler.songSelected.getEndTick()){
+            if (loopMode){
+                time = 0;
+            }else{
+                isPaused = true;
+            }
             midiChannels[0].allNotesOff();
             midiChannels[1].allNotesOff();
             midiChannels[2].allNotesOff();
         }
+    }
+
+    public static void playNote(Note note, int channel){
+        midiChannels[channel].noteOn(note.getPitch() + 12, 50);
+    }
+    public static void stopNote(Note note, int channel){
+        midiChannels[channel].noteOff(note.getPitch() + 12, 50);
+    }
+
+    public static void playSong(boolean loopMode) {
+        SongPlayer.setTime(0);
+        SongPlayer.setPaused(false);
+        SongPlayer.setLoopMode(loopMode);
+        SongPlayer.getMidiChannels()[0].allNotesOff();
+        SongPlayer.getMidiChannels()[1].allNotesOff();
+        SongPlayer.getMidiChannels()[2].allNotesOff();
     }
 
     public static void setPaused(boolean isPaused) {

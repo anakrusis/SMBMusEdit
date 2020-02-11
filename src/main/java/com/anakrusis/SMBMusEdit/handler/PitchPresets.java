@@ -64,5 +64,9 @@ public class PitchPresets {
         p.put(0x60, 39); // Eb2
         p.put(0x5e, 38); // D-2
         p.put(0x5c ,36); // C-2
+
+        for (Integer key : p.keySet()){
+            SQ2_TRI_PITCH_PRESET.getKeys().put(key, p.get(key));
+        }
     }
 }

@@ -17,19 +17,19 @@ public class Song {
     private int triangleStart = 0x00;
     private int noiseStart = 0x00;
 
-    ArrayList<Note> pulse1Notes;
-    ArrayList<Note> pulse2Notes;
-    ArrayList<Note> triangleNotes;
-    ArrayList<Note> noiseNotes;
+    Channel pulse1;
+    Channel pulse2;
+    Channel triangle;
+    Channel noise;
 
     public Song (String name, boolean hasNoise) {
         this.name = name;
         this.hasNoise = hasNoise;
 
-        this.pulse1Notes = new ArrayList<>();
-        this.pulse2Notes = new ArrayList<>();
-        this.triangleNotes = new ArrayList<>();
-        this.noiseNotes = new ArrayList<>();
+        this.pulse1 = new Channel();
+        this.pulse2 = new Channel();
+        this.triangle = new Channel();
+        this.noise = new Channel();
 
         Songs.songs.add(this);
     }
@@ -94,15 +94,15 @@ public class Song {
     }
 
     public ArrayList<Note> getPulse1Notes() {
-        return pulse1Notes;
+        return pulse1.getNotes();
     }
 
     public ArrayList<Note> getPulse2Notes() {
-        return pulse2Notes;
+        return pulse2.getNotes();
     }
 
     public ArrayList<Note> getTriangleNotes() {
-        return triangleNotes;
+        return triangle.getNotes();
     }
 
     public void setEndTick(int endTick) {
@@ -111,5 +111,21 @@ public class Song {
 
     public int getEndTick() {
         return endTick;
+    }
+
+    public Channel getPulse1() {
+        return pulse1;
+    }
+
+    public Channel getPulse2() {
+        return pulse2;
+    }
+
+    public Channel getTriangle() {
+        return triangle;
+    }
+
+    public Channel getNoise() {
+        return noise;
     }
 }

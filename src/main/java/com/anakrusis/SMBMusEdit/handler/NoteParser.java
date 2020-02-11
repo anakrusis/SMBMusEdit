@@ -41,10 +41,10 @@ public class NoteParser {
             }else{
                 if (pitchPreset.getPitches().get(sq2Byte) != null){
                     currentPitch = pitchPreset.getPitches().get(sq2Byte);
-                    currentNote = new Note (currentPitch + 12, time, currentDuration);
+                    currentNote = new Note (currentPitch, time, currentDuration, song.getPulse2());
                     song.getPulse2Notes().add(currentNote);
                 }else{
-                    currentNote = new Note (1, time, currentDuration);
+                    currentNote = new Note (1, time, currentDuration, song.getPulse2());
                     song.getPulse2Notes().add(currentNote);
                 }
 
@@ -69,10 +69,10 @@ public class NoteParser {
             } else {
                 if (pitchPreset.getPitches().get(triByte) != null) {
                     currentPitch = pitchPreset.getPitches().get(triByte) - 12;
-                    currentNote = new Note(currentPitch + 12, time, currentDuration);
+                    currentNote = new Note(currentPitch, time, currentDuration, song.getTriangle());
                     song.getTriangleNotes().add(currentNote);
                 } else {
-                    currentNote = new Note(1, time, currentDuration);
+                    currentNote = new Note(1, time, currentDuration, song.getTriangle());
                     song.getTriangleNotes().add(currentNote);
                 }
 
@@ -107,7 +107,7 @@ public class NoteParser {
             if (pitchKey != 0x04 && pitchKey != 0x00){
                 currentPitch = PitchPresets.SQ2_TRI_PITCH_PRESET.getPitches().get(pitchKey);
 
-                currentNote = new Note (currentPitch + 12, time, currentDuration);
+                currentNote = new Note (currentPitch, time, currentDuration, song.getPulse1());
                 song.getPulse1Notes().add(currentNote);
             }
             if (pitchKey != 0x00){

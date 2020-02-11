@@ -53,10 +53,17 @@ public class GuiHandler {
     public static Label triangleStartLbl = new Label("Triangle Start: ");
     public static Label noiseStartLbl = new Label("Noise Start: ");
 
-    // The main stuff
+    // Top bar stuff
+    public static Button playButton = new Button("Play \u25B6");
+    public static Button loopButton = new Button("Play & Loop \uD83D\uDD01");
+    public static Button stopButton = new Button("Stop \u23F9");
     public static MenuBar menuBar = new MenuBar();
+    public static FlowPane playbackBar = new FlowPane(Orientation.HORIZONTAL);
+    public static FlowPane topPane = new FlowPane(Orientation.VERTICAL);
+
+    // The main stuff
     public static BorderPane mainPane = new BorderPane();
-    public static FlowPane leftPane = new FlowPane(Orientation.VERTICAL);
+    public static FlowPane leftPane = new FlowPane(Orientation.HORIZONTAL);
     public static Scene scene = new Scene(mainPane, 1000, 650);
     public static Canvas pianoRoll = new Canvas(1800, 1000);
     public static GraphicsContext gc = pianoRoll.getGraphicsContext2D();
@@ -64,6 +71,8 @@ public class GuiHandler {
     public static void init(){
         menuFile.getItems().addAll(newFile, opnFile, savFile, saveAs, importRom, exportRom, exit);
         menuBar.getMenus().addAll(menuFile, menuEdit);
+
+        playbackBar.getChildren().addAll(playButton, loopButton, stopButton);
 
         for (Song song : Songs.songs){
 
@@ -97,12 +106,34 @@ public class GuiHandler {
         //songList.setMaxHeight(300);
         leftPane.getChildren().addAll(songList, songSettings);
 
+        topPane.getChildren().addAll(menuBar, playbackBar);
+        topPane.setMaxHeight(50);
+
         mainPane.setCenter(pianoRoll);
-        mainPane.setTop(menuBar);
+        mainPane.setTop(topPane);
         mainPane.setLeft(leftPane);
 
         exit.setOnAction( action -> {
             SMBMusEdit.primaryStage.close();
+        });
+
+        stopButton.setOnAction( action -> {
+           SongPlayer.setPaused(true);
+           SongPlayer.getMidiChannels()[0].allNotesOff();
+           SongPlayer.getMidiChannels()[1].allNotesOff();
+           SongPlayer.getMidiChannels()[2].allNotesOff();
+        });
+
+        playButton.setOnAction( action -> {
+            SongPlayer.playSong(false);
+        });
+
+        loopButton.setOnAction( action -> {
+            SongPlayer.playSong(true);
+        });
+
+        exportRom.setOnAction( action -> {
+            FileWriter.writeROM("");
         });
     }
 
@@ -114,13 +145,14 @@ public class GuiHandler {
         trngleStart.setText( String.format( "%04X", songSelected.getTriangleStart() ) );
         _noiseStart.setText( String.format( "%04X", songSelected.getNoiseStart() ));
 
-        camera.setX(-120);
-        camera.setY(-980);
-
         // Resets the player and stops all notes
         SongPlayer.getMidiChannels()[0].allNotesOff();
         SongPlayer.getMidiChannels()[1].allNotesOff();
         SongPlayer.getMidiChannels()[2].allNotesOff();
         SongPlayer.setTime(0);
+        SongPlayer.setPaused(true);
+
+        camera.setX( -PianoRollHandler.playLinePos );
+        camera.setY(-980);
     }
 }

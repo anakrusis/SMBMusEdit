@@ -24,6 +24,7 @@ public class TempoPresets {
                 noteDurationByte = SMBMusEdit.ROMData[tempoPresetStartByte + i + j];
                 int rhythmValue = 0x80 + j;
                 currentPreset.getDurations().put(rhythmValue, noteDurationByte);
+                currentPreset.getKeys()     .put(noteDurationByte, rhythmValue);
             }
 
             tempoPresets.put( i, currentPreset );

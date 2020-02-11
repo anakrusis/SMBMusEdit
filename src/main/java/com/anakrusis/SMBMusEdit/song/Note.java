@@ -6,11 +6,13 @@ public class Note {
     int pitch;
     int onset;
     int duration;
+    Channel channel;
 
-    public Note( int pitch, int onset, int duration ){
+    public Note( int pitch, int onset, int duration, Channel channel ){
         this.pitch = pitch;
         this.onset = onset;
         this.duration = duration;
+        this.channel = channel;
     }
 
     public int getPitch() {
@@ -47,5 +49,13 @@ public class Note {
 
     public double getScreenWidth(){
         return this.getDuration() * GuiHandler.camera.getZoom() - 2;
+    }
+
+    public Channel getChannel() {
+        return channel;
+    }
+
+    public void setChannel(Channel channel) {
+        this.channel = channel;
     }
 }
