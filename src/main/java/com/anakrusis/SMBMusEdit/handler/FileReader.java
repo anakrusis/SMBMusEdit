@@ -59,8 +59,9 @@ public class FileReader {
                     int noiseStart = romAddress + rom[pointerStartByte + pointertarget + 5];
                     song.setNoiseStart(noiseStart);
                 }
-
-                NoteParser.parseNotes(song);
+                if (song.getPulse2Notes().isEmpty()){
+                    NoteParser.parseNotes(song);
+                }
             }
 
         } catch (IOException e){

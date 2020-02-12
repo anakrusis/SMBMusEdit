@@ -30,10 +30,6 @@ public class NoteParser {
             if (preset.getDurations().get(sq2Byte) != null) {
                 currentDuration = preset.getDurations().get(sq2Byte);
 
-            // The value 0x04 is hardcoded as a note rest
-            }else if (sq2Byte == 0x04) {
-                time += currentDuration;
-
             // And the value 0x00 is hardcoded as the frame's looping or stopping point
             // (if the song loops or not)
             }else if (sq2Byte == 0x00){
@@ -41,10 +37,10 @@ public class NoteParser {
             }else{
                 if (pitchPreset.getPitches().get(sq2Byte) != null){
                     currentPitch = pitchPreset.getPitches().get(sq2Byte);
-                    currentNote = new Note (currentPitch, time, currentDuration, song.getPulse2());
+                    currentNote = new Note (currentPitch, time, currentDuration, song.getPulse2(), sq2Index);
                     song.getPulse2Notes().add(currentNote);
                 }else{
-                    currentNote = new Note (1, time, currentDuration, song.getPulse2());
+                    currentNote = new Note (1, time, currentDuration, song.getPulse2(), sq2Index);
                     song.getPulse2Notes().add(currentNote);
                 }
 
@@ -55,6 +51,7 @@ public class NoteParser {
         song.setEndTick(time);
         time = 0;
 
+        // If the channel is the same then they will point to the same channel
         // Parsing triangle next, stopping when reaching the pulse 2 endpoint.
         int triIndex = triStart;
         int triByte;
@@ -62,17 +59,13 @@ public class NoteParser {
             triByte = SMBMusEdit.ROMData[triIndex];
             if (preset.getDurations().get(triByte) != null) {
                 currentDuration = preset.getDurations().get(triByte);
-
-            // The value 0x04 is hardcoded as a note rest
-            } else if (triByte == 0x04) {
-                time += currentDuration;
             } else {
                 if (pitchPreset.getPitches().get(triByte) != null) {
-                    currentPitch = pitchPreset.getPitches().get(triByte) - 12;
-                    currentNote = new Note(currentPitch, time, currentDuration, song.getTriangle());
+                    currentPitch = pitchPreset.getPitches().get(triByte);
+                    currentNote = new Note(currentPitch, time, currentDuration, song.getTriangle(), triIndex);
                     song.getTriangleNotes().add(currentNote);
                 } else {
-                    currentNote = new Note(1, time, currentDuration, song.getTriangle());
+                    currentNote = new Note(1, time, currentDuration, song.getTriangle(), triIndex);
                     song.getTriangleNotes().add(currentNote);
                 }
 
@@ -80,6 +73,7 @@ public class NoteParser {
             }
             triIndex++;
         }
+
         time = 0;
 
         int sq1Index = sq1Start;
@@ -89,7 +83,7 @@ public class NoteParser {
         while (time < song.getEndTick() && song != Songs.UNDERGROUND) {
             sq1Byte = SMBMusEdit.ROMData[sq1Index];
 
-            // Upper two bits plus the parity are used for rhythm (4 * 2 = 8 rhythms)
+            // Upper two bits plus the least significant are used for rhythm (8 in total)
             durationKey = sq1Byte & 0xc0;
             durationKey = durationKey >> 6;
             durationKey += 0x80;
@@ -98,19 +92,15 @@ public class NoteParser {
             }
             currentDuration = preset.getDurations().get(durationKey);
 
-            // Lower 6 bits are used for pitch, with each even and odd pair encoding the same pitch
-            pitchKey = sq1Byte & 0x3f;
-            if (pitchKey % 2 == 1){
-                pitchKey--;
-            }
+            // The middle 5 bits are used for pitch. (This is a smaller pitch set than pulse 2 and tri)
+            pitchKey = sq1Byte & 0x3e;
 
-            if (pitchKey != 0x04 && pitchKey != 0x00){
+            if (pitchKey != 0x00){
                 currentPitch = PitchPresets.SQ2_TRI_PITCH_PRESET.getPitches().get(pitchKey);
 
-                currentNote = new Note (currentPitch, time, currentDuration, song.getPulse1());
+                currentNote = new Note (currentPitch, time, currentDuration, song.getPulse1(), sq1Index);
                 song.getPulse1Notes().add(currentNote);
-            }
-            if (pitchKey != 0x00){
+
                 time += currentDuration;
             }
             sq1Index++;

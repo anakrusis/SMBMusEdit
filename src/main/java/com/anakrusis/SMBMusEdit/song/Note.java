@@ -7,12 +7,14 @@ public class Note {
     int onset;
     int duration;
     Channel channel;
+    int pitchByte;
 
-    public Note( int pitch, int onset, int duration, Channel channel ){
+    public Note( int pitch, int onset, int duration, Channel channel, int pitchByte ){
         this.pitch = pitch;
         this.onset = onset;
         this.duration = duration;
         this.channel = channel;
+        this.pitchByte = pitchByte;
     }
 
     public int getPitch() {
@@ -44,7 +46,8 @@ public class Note {
     }
 
     public double getScreenY() {
-        return -(this.pitch * 10) - GuiHandler.camera.getY();
+        int sub = (this.channel == GuiHandler.songSelected.getTriangle()) ? 12 : 0;
+        return -((this.pitch - sub) * 10) - GuiHandler.camera.getY();
     }
 
     public double getScreenWidth(){
@@ -57,5 +60,13 @@ public class Note {
 
     public void setChannel(Channel channel) {
         this.channel = channel;
+    }
+
+    public int getPitchByte() {
+        return pitchByte;
+    }
+
+    public void setPitchByte(int pitchByte) {
+        this.pitchByte = pitchByte;
     }
 }

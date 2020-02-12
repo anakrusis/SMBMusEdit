@@ -23,7 +23,7 @@ public class PianoRollHandler {
     public static boolean draggingNote = false;
     public static Note noteSelected = null;
     // When clicked, a note plays for 10 ticks and then stops
-    public static int noteSelectedPlayTimer = 10;
+    public static int noteSelectedPlayTimer = 0;
 
     public static double playLinePos = 200;
 
@@ -91,44 +91,17 @@ public class PianoRollHandler {
 
         GuiHandler.pianoRoll.setOnMouseDragged(action -> {
 
-            if (noteSelected != null){
-                int offset = 0;
-                boolean above = false;
-                // The nearest note above the current note
-                if (action.getY() < noteSelected.getScreenY()){
-                    offset = 1;
-                    above = true;
-
-                // The nearest note below the current note
-                }else if (action.getY() > noteSelected.getScreenY() + 10){
-                    offset = -1;
-                    above = false;
-                }else{
-                    lastDragX = action.getX();
-                    lastDragY = action.getY();
-                }
-
-                int newPitch = PitchPresets.SQ2_TRI_PITCH_PRESET.getNearestPitch(noteSelected, offset, above);
-
-                if (newPitch != -1 && newPitch != noteSelected.getPitch()){
-                    SongPlayer.stopNote(noteSelected, 0);
-                    noteSelected.setPitch( newPitch );
-                    SongPlayer.playNote(noteSelected, 0);
-                    noteSelectedPlayTimer = 10;
-                }
-            }else{
-                if (action.isStillSincePress()){
-                    lastDragX = action.getX();
-                    lastDragY = action.getY();
-                }
-
-                double dragX = action.getX() - lastDragX;
-                double dragY = action.getY() - lastDragY;
-                GuiHandler.camera.setX( GuiHandler.camera.getX() - dragX );
-                GuiHandler.camera.setY( GuiHandler.camera.getY() - dragY );
+            if (action.isStillSincePress()){
                 lastDragX = action.getX();
                 lastDragY = action.getY();
             }
+
+            double dragX = action.getX() - lastDragX;
+            double dragY = action.getY() - lastDragY;
+            GuiHandler.camera.setX( GuiHandler.camera.getX() - dragX );
+            GuiHandler.camera.setY( GuiHandler.camera.getY() - dragY );
+            lastDragX = action.getX();
+            lastDragY = action.getY();
         });
     }
 

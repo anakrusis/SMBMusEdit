@@ -25,11 +25,7 @@ public class Song {
     public Song (String name, boolean hasNoise) {
         this.name = name;
         this.hasNoise = hasNoise;
-
-        this.pulse1 = new Channel();
-        this.pulse2 = new Channel();
-        this.triangle = new Channel();
-        this.noise = new Channel();
+        this.clearChannels();
 
         Songs.songs.add(this);
     }
@@ -127,5 +123,28 @@ public class Song {
 
     public Channel getNoise() {
         return noise;
+    }
+
+    public void setPulse1(Channel pulse1) {
+        this.pulse1 = pulse1;
+    }
+
+    public void setPulse2(Channel pulse2) {
+        this.pulse2 = pulse2;
+    }
+
+    public void setTriangle(Channel triangle) {
+        this.triangle = triangle;
+    }
+
+    public void setNoise(Channel noise) {
+        this.noise = noise;
+    }
+
+    public void clearChannels(){
+        this.pulse1 = new Channel();
+        this.pulse2 = new Channel();
+        this.triangle = new Channel();
+        this.noise = new Channel();
     }
 }

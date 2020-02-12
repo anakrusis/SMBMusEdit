@@ -65,11 +65,20 @@ public class SongPlayer {
         }
     }
 
-    public static void playNote(Note note, int channel){
-        midiChannels[channel].noteOn(note.getPitch() + 12, 50);
+    public static void playNote(Note note, int channel)
+    {
+        int add = 12;
+        if (note.getChannel() == GuiHandler.songSelected.getTriangle()){
+            add = 0;
+        }
+        midiChannels[channel].noteOn(note.getPitch() + add, 50);
     }
     public static void stopNote(Note note, int channel){
-        midiChannels[channel].noteOff(note.getPitch() + 12, 50);
+        int add = 12;
+        if (note.getChannel() == GuiHandler.songSelected.getTriangle()){
+            add = 0;
+        }
+        midiChannels[channel].noteOff(note.getPitch() + add, 50);
     }
 
     public static void playSong(boolean loopMode) {

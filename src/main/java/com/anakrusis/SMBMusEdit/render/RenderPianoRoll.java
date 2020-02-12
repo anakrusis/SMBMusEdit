@@ -1,5 +1,6 @@
 package com.anakrusis.SMBMusEdit.render;
 
+import com.anakrusis.SMBMusEdit.SMBMusEdit;
 import com.anakrusis.SMBMusEdit.handler.GuiHandler;
 import com.anakrusis.SMBMusEdit.handler.PianoRollHandler;
 import com.anakrusis.SMBMusEdit.song.Note;
@@ -34,5 +35,9 @@ public class RenderPianoRoll {
         GuiHandler.gc.setFill( new Color (1, 1, 1, 1));
         GuiHandler.gc.fillRect(PianoRollHandler.playLinePos, 0, 2, 1000);
 
+        if (PianoRollHandler.noteSelected != null){
+            String byteValue = String.format("%02x", SMBMusEdit.ROMData[PianoRollHandler.noteSelected.getPitchByte()]);
+            GuiHandler.gc.fillText(byteValue, 300, 10);
+        }
     }
 }

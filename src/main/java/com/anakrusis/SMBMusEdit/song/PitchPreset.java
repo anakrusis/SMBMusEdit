@@ -28,11 +28,6 @@ public class PitchPreset {
     public int getNearestPitch (Note note, int offset, boolean above){
         int pitch = note.getPitch() + offset;
 
-        // Triangle reads an octave up
-        if (note.getChannel() == GuiHandler.songSelected.getTriangle()){
-            pitch += 12;
-        }
-
         int nearestPitchDist = 100000;
         int nearestPitch = -1;
         int currentPitchDist;
@@ -57,10 +52,6 @@ public class PitchPreset {
                     }
                 }
             }
-        }
-        // And triangle plays the notes an octave down
-        if (note.getChannel() == GuiHandler.songSelected.getTriangle()){
-            nearestPitch -= 12;
         }
 
         return nearestPitch;

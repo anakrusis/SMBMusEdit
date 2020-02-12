@@ -3,6 +3,7 @@ package com.anakrusis.SMBMusEdit.handler;
 import com.anakrusis.SMBMusEdit.SMBMusEdit;
 import com.anakrusis.SMBMusEdit.player.SongPlayer;
 import com.anakrusis.SMBMusEdit.render.Camera;
+import com.anakrusis.SMBMusEdit.song.Note;
 import com.anakrusis.SMBMusEdit.song.Song;
 import com.anakrusis.SMBMusEdit.song.Songs;
 import javafx.geometry.Insets;
@@ -11,6 +12,7 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
@@ -113,6 +115,27 @@ public class GuiHandler {
         mainPane.setTop(topPane);
         mainPane.setLeft(leftPane);
 
+        scene.setOnKeyPressed( action -> {
+            if (action.getCode() == KeyCode.W || action.getCode() == KeyCode.S){
+                int newPitch = -1;
+                Note noteSelected = PianoRollHandler.noteSelected;
+                if (action.getCode() == KeyCode.W){
+                    newPitch = PitchPresets.SQ2_TRI_PITCH_PRESET.getNearestPitch(noteSelected, 1, true);
+                }
+                if (action.getCode() == KeyCode.S){
+                    newPitch = PitchPresets.SQ2_TRI_PITCH_PRESET.getNearestPitch(noteSelected, -1, false);
+                }
+                if (newPitch != -1 && newPitch != noteSelected.getPitch()){
+                    SongPlayer.stopNote(noteSelected, 0);
+                    noteSelected.setPitch(newPitch);
+                    NoteWriter.writeNote(noteSelected);
+                    GuiHandler.onNoteChange();
+                    SongPlayer.playNote(noteSelected, 0);
+                    PianoRollHandler.noteSelectedPlayTimer = 10;
+                }
+            }
+        });
+
         exit.setOnAction( action -> {
             SMBMusEdit.primaryStage.close();
         });
@@ -135,6 +158,13 @@ public class GuiHandler {
         exportRom.setOnAction( action -> {
             FileWriter.writeROM("");
         });
+    }
+
+    public static void onNoteChange(){
+        for (Song song: Songs.songs){
+            song.clearChannels();
+            NoteParser.parseNotes(song);
+        }
     }
 
     public static void onSongChange(){
