@@ -8,7 +8,7 @@ function love.load()
 		
 	rom = {};	
 	for i = 1, #content do
-		rom[i] = string.byte(string.sub(content,i,i))
+		rom[i - 1] = string.byte(string.sub(content,i,i))
 	end 
 	
 	songs = {};
