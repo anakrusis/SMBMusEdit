@@ -1,9 +1,18 @@
 require "song"
 require "bitwise"
+require "gui"
+require "guielement"
 
 function love.load()
-
-	playing = false; playpos = 0;
+	
+	SRC_PULSE2 = love.audio.newSource( "square.flac", "static" );
+	SRC_PULSE2:setLooping(true);
+	SRC_PULSE1 = love.audio.newSource( "square.flac", "static" );
+	SRC_PULSE1:setLooping(true);
+	SRC_TRI = love.audio.newSource( "square.flac", "static" );
+	SRC_TRI:setLooping(true);
+	
+	playing = false; playpos = 0; -- currenttick
 	
 	love.window.setTitle("SMBMusEdit 0.1.0a")
 	success = love.window.setMode( 800, 600, {resizable=true} )
@@ -22,14 +31,69 @@ function love.load()
 	
 	songs = {};
 	sng_mariodies = Song:new{ name = "Mario Dies" };
-	sng_mariodies:parse(0x791e, 1);
+	sng_mariodies:parse(0x7926, 1);
 	
-	--print( bitwise.band(255,0xc0) );
+	init_gui();
 	
 end
 
-function love.update(dt)
+function love.keypressed(key)
 
+	if key == "return" then
+		playing = not playing;
+		playpos = 0;
+		if (not playing) then stop(); end
+	end
+end
+
+function love.mousepressed( x,y,button )
+	click_gui(x,y);
+	if (bypassGameClick) then bypassGameClick = false; return; end
+end
+
+function love.update(dt)
+	if (playing) then
+		play();
+	end
+	
+	update_gui();
+end
+
+function play()
+	local ptrn = sng_mariodies.patterns[0];
+	playChannel( ptrn.pulse2_notes, SRC_PULSE2 );
+	playChannel( ptrn.tri_notes,    SRC_TRI );
+	playChannel( ptrn.pulse1_notes, SRC_PULSE1 );
+	
+	if (playpos > ptrn.duration) then stop() end
+	
+	playpos = playpos + 1;
+end
+
+function playChannel( notes, source )
+	for i = 0, #notes do
+		local note = notes[i];
+		if note.starttime == playpos then
+			
+			if ( note.val == 04) then
+				source:stop();
+			else
+				local freq = FREQ_TABLE[ note.val ];
+				if (source == SRC_TRI) then
+					freq = freq / 2;
+				end
+				source:setPitch( freq / 130.8128 ); -- <- the frequency of the square wave sample im using right now
+				source:play();
+			end
+		end
+	end
+end
+
+function stop()
+	SRC_PULSE2:stop();
+	SRC_PULSE1:stop();
+	SRC_TRI:stop();
+	playing = false;
 end
 
 function love.draw()
@@ -71,11 +135,7 @@ function love.draw()
 		end
 	end
 	
-	--string.format("%02X",
-	
-	--for i = 1, #rom do
-		--love.graphics.print( string.format("%02X", rom[i] ), 0, i*16 );
-	--end 
+	render_gui();
 end
 
 function initRhythmTables()
