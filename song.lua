@@ -20,6 +20,8 @@ function Song:new(o)
 	o = o or {}
 	setmetatable(o, self)
 	self.__index = self
+	
+	o.patterns = {};
 	return o
 end
 
@@ -68,11 +70,17 @@ function Pattern:new(o)
 	o = o or {}
 	setmetatable(o, self)
 	self.__index = self
+	
+	o.pulse2_notes = {};
+	o.tri_notes    = {};
+	o.pulse1_notes = {};
+	o.noise_notes  = {};
+	
 	return o
 end
 
 -- This is the pulse 2 and triangle style note parsing
--- pulse 1 and noise parsing are done seperately
+-- (pulse 1 and noise parsing are done in their own respective functions)
 function Pattern:parseNotes(start_index, target_table)
 	local duration = 0;
 	local current_rhythm_val = nil;
@@ -100,7 +108,7 @@ function Pattern:parseNotes(start_index, target_table)
 			current_rhythm_val = val;
 			local rhythm_ind = ( val - 0x80 ) + self.tempo;
 			current_note_length = RHYTHM_TABLE[ rhythm_ind ];
-			print(current_note_length);
+			--print(current_note_length);
 			
 		-- Notes proper
 		else
@@ -109,8 +117,10 @@ function Pattern:parseNotes(start_index, target_table)
 			n.starttime = duration;
 			n.val = val;
 			
-			--local freq = FREQ_TABLE[val];
 			n.pitch = NOTES[val];
+			if (target_table == self.tri_notes) then
+				n.pitch = n.pitch - 12;
+			end
 			
 			target_table[ notecount ] = n;
 			duration = duration + n.duration;
@@ -119,6 +129,50 @@ function Pattern:parseNotes(start_index, target_table)
 	end
 	
 	return duration;
+end
+
+function Pattern:parsePulse1Notes( start_index, target_table )
+	local duration = 0;
+	local current_rhythm_val = nil;
+	local current_note_length = nil;
+	local notecount = 0;
+	
+	for i = 0x00, 0xff do
+		local ind = start_index + i;
+		local val = rom[ind];
+		
+		if self.duration > 0 and duration >= self.duration then
+			return;
+		end
+		
+		print( "Val: " .. string.format( "%02X", val ));
+		
+		-- Rhythm data for pulse 1 is obtained with a bitmask like this: 1100 0001
+		local less_sig_bits = bitwise.band( val, 0xc0 );
+		local more_sig_bit  = val % 2;
+		current_rhythm_val  = 0x80 + ( more_sig_bit * 4 ) + ( less_sig_bits / 0x40 );
+		
+		print( "Rhythm: " .. string.format( "%02X", current_rhythm_val ));
+		
+		local rhythm_ind = ( current_rhythm_val - 0x80 ) + self.tempo;
+		current_note_length = RHYTHM_TABLE[ rhythm_ind ];
+		
+		print( "Length: " .. string.format( "%02X", current_note_length ));
+		
+		local n = Note:new{ rom_index = ind }
+		n.duration = current_note_length;
+		n.starttime = duration;
+		
+		-- Bitmask of 0011 1110 provides the pitch data for pulse 1
+		local pval = bitwise.band( val, 0x3e );
+		n.val = pval;
+		n.pitch = NOTES[pval];
+		print( "Pitch: " .. string.format( "%02X", pval ));
+		
+		target_table[ notecount ] = n;
+		duration = duration + n.duration;
+		notecount = notecount + 1;
+	end
 end
 
 -- Parses pattern, given a header start index ( hdr_strt_ind ) as an entry point
@@ -134,8 +188,10 @@ function Pattern:parse( hdr_strt_ind )
 	self.tri_start_index    = self.pulse2_start_index + rom[ hdr_strt_ind + 3 ];
 	self.pulse1_start_index = self.pulse2_start_index + rom[ hdr_strt_ind + 4 ];
 	
+	-- Duration of pattern is decided by the length of the pulse 2 channel
 	self.duration = self:parseNotes(self.pulse2_start_index, self.pulse2_notes);
 	self:parseNotes(self.tri_start_index, self.tri_notes);
+	self:parsePulse1Notes(self.pulse1_start_index, self.pulse1_notes);
 end
 
 Note = {

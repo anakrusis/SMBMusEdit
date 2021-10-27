@@ -1,4 +1,5 @@
 require "song"
+require "bitwise"
 
 function love.load()
 
@@ -21,7 +22,9 @@ function love.load()
 	
 	songs = {};
 	sng_mariodies = Song:new{ name = "Mario Dies" };
-	sng_mariodies:parse(0x792e, 1);
+	sng_mariodies:parse(0x791e, 1);
+	
+	--print( bitwise.band(255,0xc0) );
 	
 end
 
@@ -34,7 +37,7 @@ function love.draw()
 	-- Piano roll rendering
 	local ptrn = sng_mariodies.patterns[0];
 	
-	love.graphics.setColor(255,0,255);
+	love.graphics.setColor(1,0,1);
 	for i = 0, #ptrn.pulse2_notes do
 		local note = ptrn.pulse2_notes[i];
 		local rectx = note.starttime * 4; 
@@ -45,9 +48,20 @@ function love.draw()
 			love.graphics.rectangle( "fill", rectx, recty, rectwidth, 10 )
 		end
 	end
-	love.graphics.setColor(0,0,255);
+	love.graphics.setColor(0,0,1);
 	for i = 0, #ptrn.tri_notes do
 		local note = ptrn.tri_notes[i];
+		local rectx = note.starttime * 4; 
+		local recty = 1000 - note.pitch * 10;
+		local rectwidth = note.duration * 3.8;
+		
+		if ( note.val ~= 04) then
+			love.graphics.rectangle( "fill", rectx, recty, rectwidth, 10 )
+		end
+	end
+	love.graphics.setColor(0.5,0,0.5);
+	for i = 0, #ptrn.pulse1_notes do
+		local note = ptrn.pulse1_notes[i];
 		local rectx = note.starttime * 4; 
 		local recty = 1000 - note.pitch * 10;
 		local rectwidth = note.duration * 3.8;
