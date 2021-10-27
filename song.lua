@@ -27,19 +27,19 @@ end
 -- pointerscount will always be 1 except for the overworld theme which takes like a ton of pointers
 function Song:parse( ptr_start_index, pointerscount )
 	currentsong = self;
-	local MUSIC_DATA_START = 0x791D;
+	local MUSIC_STRT_INDEX = 0x791D;
 
 	for i = 0, pointerscount - 1 do
 	
 		local p = Pattern:new();
 	
 		local ptr = rom[ ptr_start_index + i ]; --print( string.format( "%02X", ptr ));
-		local header_start_index = MUSIC_DATA_START + ptr;
+		local header_start_index = MUSIC_STRT_INDEX + ptr;
 		p:parse( header_start_index );
 		
 		self.patterns[i] = p;
 		
-		--local tempo = rom[ MUSIC_DATA_START + ptr ]; print( string.format( "%02X", tempo ));
+		--local tempo = rom[ MUSIC_STRT_INDEX + ptr ]; print( string.format( "%02X", tempo ));
 	end
 end
 
@@ -71,6 +71,56 @@ function Pattern:new(o)
 	return o
 end
 
+-- This is the pulse 2 and triangle style note parsing
+-- pulse 1 and noise parsing are done seperately
+function Pattern:parseNotes(start_index, target_table)
+	local duration = 0;
+	local current_rhythm_val = nil;
+	local current_note_length = nil;
+	local notecount = 0;
+	
+	-- (The index register won't ever exceed 0xff in the games code internally, so i am putting that limit here as well)
+	-- (...in particular if the terminating 0x00 is accidently left absent from the pattern, it won't keep going forever here in this program)
+	for i = 0x00, 0xff do
+		local ind = start_index + i;
+		local val = rom[ind];
+		--print( string.format( "%02X", val ));
+		
+		if self.duration > 0 and duration >= self.duration then
+			return duration;
+		end
+		
+		-- Pattern terminator
+		if val == 0x00 then
+			return duration;
+		end
+		
+		-- Rhythm modifiers
+		if val >= 0x80 and val <= 0x88 then
+			current_rhythm_val = val;
+			local rhythm_ind = ( val - 0x80 ) + self.tempo;
+			current_note_length = RHYTHM_TABLE[ rhythm_ind ];
+			print(current_note_length);
+			
+		-- Notes proper
+		else
+			local n = Note:new{ rom_index = ind }
+			n.duration = current_note_length;
+			n.starttime = duration;
+			n.val = val;
+			
+			--local freq = FREQ_TABLE[val];
+			n.pitch = NOTES[val];
+			
+			target_table[ notecount ] = n;
+			duration = duration + n.duration;
+			notecount = notecount + 1;
+		end
+	end
+	
+	return duration;
+end
+
 -- Parses pattern, given a header start index ( hdr_strt_ind ) as an entry point
 function Pattern:parse( hdr_strt_ind )
 	self.tempo = rom[ hdr_strt_ind ];
@@ -84,31 +134,19 @@ function Pattern:parse( hdr_strt_ind )
 	self.tri_start_index    = self.pulse2_start_index + rom[ hdr_strt_ind + 3 ];
 	self.pulse1_start_index = self.pulse2_start_index + rom[ hdr_strt_ind + 4 ];
 	
-	-- SQUARE 2 PARSING
-	-- (The index register won't ever exceed 0xff in the games code internally, so i am putting that limit here as well)
-	-- (...in particular if the terminating 0x00 is accidently left absent from the pattern, it won't keep going forever here in this program)
-	
-	local currentrhythm = nil;
-	
-	for i = 0x00, 0xff do
-		local ind = self.pulse2_start_index + i;
-		local val = rom[ind];
-		print( string.format( "%02X", val ));
-		
-		if val == 0x00 then
-			break;
-		end
-		
-		-- Rhythm modifiers
-		if val >= 0x80 and val <= 0x88 then
-		
-		end
-	end
+	self.duration = self:parseNotes(self.pulse2_start_index, self.pulse2_notes);
+	self:parseNotes(self.tri_start_index, self.tri_notes);
 end
 
 Note = {
-	pitch = nil,
-	rhythm = nil,
+	-- location in rom
+	rom_index = nil,
+	starttime = 0,
+	duration = 0,
+	-- used to get the frequency from the timer table
+	-- this value will be obtained slightly differently by pulse 1, i think... (will see when we get there)
+	val = 0,
+	pitch = 0,
 }
 
 function Note:new(o)
