@@ -2,7 +2,7 @@ function initGUI()
 	GUI_SCALE = 1; bypassGameClick = false;
 	-- scroll values for the two editors, pattern editor and piano roll editor
 	PATTERN_SCROLL = 0; PATTERN_ZOOMX = 1;
-	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0; PIANOROLL_ZOOMX = 4; PIANOROLL_ZOOMY = 1;
+	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0; PIANOROLL_ZOOMX = 4; PIANOROLL_ZOOMY = 20;
 	DIVIDER_POS = 300; SIDE_PIANO_WIDTH = 128;
 	elements = {};
 	
@@ -19,7 +19,7 @@ function initGUI()
 	local file = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="file", text="File"};
 	local edit = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="edit", text="Edit"};
 	
-	GROUP_PTRN_EDIT = GuiElement:new{x=-50, y=55, width=500, height=60, name="ptrneditor", autopos = "top", autosizey = true, padding = 0};
+	GROUP_PTRN_EDIT = GuiElement:new{x=-50, y=60, width=500, height=60, name="ptrneditor", autopos = "top", autosizey = true, padding = 0};
 	function GROUP_PTRN_EDIT:onUpdate()
 		self.width = 2000;
 		self.x = ((0 - PATTERN_SCROLL) * PATTERN_ZOOMX)

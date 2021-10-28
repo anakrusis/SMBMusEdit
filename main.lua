@@ -64,9 +64,15 @@ function love.mousemoved( x, y, dx, dy, istouch )
 	if love.mouse.isDown( 3 ) then
 		if love.mouse.getY() > DIVIDER_POS then
 			PIANOROLL_SCROLLX = PIANOROLL_SCROLLX - (dx / PIANOROLL_ZOOMX);
-			PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - (dy);
+			PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - (dy / PIANOROLL_ZOOMY);
 		else 
 			PATTERN_SCROLL = PATTERN_SCROLL - (dx / PATTERN_ZOOMX);
+		end
+	end
+	if love.mouse.isDown( 1 ) then
+		if love.mouse.getY() > DIVIDER_POS and love.mouse.getX() < SIDE_PIANO_WIDTH then
+			PIANOROLL_ZOOMY = PIANOROLL_ZOOMY - (dx);
+			PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
 		end
 	end
 end
@@ -81,7 +87,7 @@ function love.wheelmoved( x, y )
 			PATTERN_ZOOMX = math.max(0.5, PATTERN_ZOOMX);
 		end
 	else
-		PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - (y * PIANOROLL_ZOOMY);
+		PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - ((y * 50) / PIANOROLL_ZOOMY);
 	end
 end
 
@@ -167,6 +173,8 @@ function love.draw()
 		love.graphics.line(linex,DIVIDER_POS,linex,WINDOW_HEIGHT);
 	end
 	
+	renderSidePiano();
+	
 	-- masks out anything of the piano roll rendered above the divider
 	love.graphics.setColor( 0,0,0 );
 	love.graphics.rectangle("fill",0,0,WINDOW_WIDTH,DIVIDER_POS);
@@ -188,17 +196,22 @@ end
 function pianoroll_trax(x)
 	return PIANOROLL_ZOOMX * (x - PIANOROLL_SCROLLX) + (WINDOW_WIDTH / 2) + SIDE_PIANO_WIDTH; 
 end
+function pianoroll_tray(y)
+	return PIANOROLL_ZOOMY * (60 - y - PIANOROLL_SCROLLY ) + DIVIDER_POS + ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 );
+	
+	--(y * PIANOROLL_ZOOMY) - PIANOROLL_SCROLLY + DIVIDER_POS + ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 )
+end
 
 function renderChannel( notes, color )
 	for i = 0, #notes do
 		love.graphics.setColor( color );
 		local note = notes[i];
 		local rectx = pianoroll_trax( note.starttime );
-		local recty = (600 - note.pitch * 10) - PIANOROLL_SCROLLY + DIVIDER_POS + ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 ) -- + WINDOW_HEIGHT/2 + WINDOW_HEIGHT/4;
+		local recty = pianoroll_tray( note.pitch );
 		local rectwidth = note.duration * PIANOROLL_ZOOMX;
 		
 		if ( note.val ~= 04) then
-			love.graphics.rectangle( "fill", rectx, recty, rectwidth, 10 )
+			love.graphics.rectangle( "fill", rectx, recty, rectwidth, PIANOROLL_ZOOMY )
 		end
 		
 		love.graphics.setColor( 1,1,1,0.5 );
@@ -208,6 +221,20 @@ function renderChannel( notes, color )
 	local dur = sng_mariodies.patterns[selectedPattern].duration;
 	local endx = pianoroll_trax(dur);
 	love.graphics.line(endx,DIVIDER_POS,endx,WINDOW_HEIGHT);
+end
+
+function renderSidePiano()
+	for i = 40, 90 do
+		local keyy = pianoroll_tray( i );
+		
+		local m = (i) % 12;
+		if ( m == 1 or m == 3 or m == 6 or m == 8 or m == 10 ) then
+			love.graphics.setColor( 0.25,0.25,0.25 );
+		else
+			love.graphics.setColor( 1,1,1 );
+		end
+		love.graphics.rectangle( "fill", 0, keyy, SIDE_PIANO_WIDTH, PIANOROLL_ZOOMY )
+	end
 end
 
 function initRhythmTables()
