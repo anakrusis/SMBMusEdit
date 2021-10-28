@@ -46,6 +46,20 @@ function Song:parse( ptr_start_index, pointerscount )
 	updatePatternGUI( self );
 end
 
+function Song:getLowestNote(key)
+	-- local lowestpitch = 10000; local lowestpitchindex = -1;
+	-- for i = 0, pointerscount - 1 do
+		-- local p = self.patterns[i];
+		
+		-- local currentlow = p.getLowestNote(key);
+		-- if (currentlow < lowestpitch) then
+			-- lowestpitch = currentlow;
+			-- lowestpitchindex = i;
+		-- end
+	-- end
+	
+end
+
 Pattern = {
 	-- access into the rom from these values
 	pulse2_start_index = nil,
@@ -91,6 +105,38 @@ function Pattern:getNotes(key)
 	elseif key == "noise" then
 		return self.noise_notes
 	end
+end
+
+-- returns the index of the lowest note in the notes table
+function Pattern:getLowestNote(key)
+	local notes = self:getNotes(key);
+	
+	local lowestpitch = 10000; local lowestpitchindex = -1;
+	for i = 0, #notes do
+		local note = notes[i];
+
+		if (note.pitch < lowestpitch and note.val ~= 04) then
+			lowestpitch = note.pitch;
+			lowestpitchindex = i;
+		end
+	end
+	return lowestpitchindex;
+end
+
+-- returns the index of the highest note in the notes table
+function Pattern:getHighestNote(key)
+	local notes = self:getNotes(key);
+	
+	local highestpitch = -10000; local hipitchindex = -1;
+	for i = 0, #notes do
+		local note = notes[i];
+
+		if (note.pitch > highestpitch and note.val ~= 04) then
+			highestpitch = note.pitch;
+			hipitchindex = i;
+		end
+	end
+	return hipitchindex;
 end
 
 -- This is the pulse 2 and triangle style note parsing
@@ -159,19 +205,19 @@ function Pattern:parsePulse1Notes( start_index, target_table )
 			return;
 		end
 		
-		print( "Val: " .. string.format( "%02X", val ));
+		--print( "Val: " .. string.format( "%02X", val ));
 		
 		-- Rhythm data for pulse 1 is obtained with a bitmask like this: 1100 0001
 		local less_sig_bits = bitwise.band( val, 0xc0 );
 		local more_sig_bit  = val % 2;
 		current_rhythm_val  = 0x80 + ( more_sig_bit * 4 ) + ( less_sig_bits / 0x40 );
 		
-		print( "Rhythm: " .. string.format( "%02X", current_rhythm_val ));
+		--print( "Rhythm: " .. string.format( "%02X", current_rhythm_val ));
 		
 		local rhythm_ind = ( current_rhythm_val - 0x80 ) + self.tempo;
 		current_note_length = RHYTHM_TABLE[ rhythm_ind ];
 		
-		print( "Length: " .. string.format( "%02X", current_note_length ));
+		--print( "Length: " .. string.format( "%02X", current_note_length ));
 		
 		local n = Note:new{ rom_index = ind }
 		n.duration = current_note_length;
@@ -181,7 +227,7 @@ function Pattern:parsePulse1Notes( start_index, target_table )
 		local pval = bitwise.band( val, 0x3e );
 		n.val = pval;
 		n.pitch = NOTES[pval];
-		print( "Pitch: " .. string.format( "%02X", pval ));
+		--print( "Pitch: " .. string.format( "%02X", pval ));
 		
 		target_table[ notecount ] = n;
 		duration = duration + n.duration;
@@ -206,6 +252,8 @@ function Pattern:parse( hdr_strt_ind )
 	self.duration = self:parseNotes(self.pulse2_start_index, self.pulse2_notes);
 	self:parseNotes(self.tri_start_index, self.tri_notes);
 	self:parsePulse1Notes(self.pulse1_start_index, self.pulse1_notes);
+	
+	print("Lowest note: " .. self:getLowestNote("pulse2"));
 end
 
 Note = {

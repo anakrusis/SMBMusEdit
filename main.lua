@@ -13,8 +13,11 @@ function love.load()
 	SRC_TRI:setLooping(true);
 	
 	playing = false; playpos = 0; -- currenttick
+	playingPattern = 0;
 	
-	selectedChannel = "pulse2";
+	selectedChannel = "tri";
+	selectedPattern = 0;
+	selectedSong    = 0;
 	
 	love.window.setTitle("SMBMusEdit 0.1.0a")
 	success = love.window.setMode( 800, 600, {resizable=true, minwidth=800, minheight=600} )
@@ -36,14 +39,14 @@ function love.load()
 	
 	songs = {};
 	sng_mariodies = Song:new{ name = "Mario Dies" };
-	sng_mariodies:parse(0x7926, 1);
+	sng_mariodies:parse(0x792D, 7);
 end
 
 function love.keypressed(key)
 
 	if key == "return" then
 		playing = not playing;
-		playpos = 0;
+		playpos = 0; playingPattern = selectedPattern;
 		if (not playing) then stop(); end
 	end
 end
@@ -63,6 +66,8 @@ end
 function love.wheelmoved( x, y )
 	if love.keyboard.isDown( "lctrl" ) then
 		PIANOROLL_ZOOMX = PIANOROLL_ZOOMX + (y / 2);
+		
+		PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
 	else
 		PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - (y * PIANOROLL_ZOOMY);
 	end
@@ -76,11 +81,17 @@ function love.update(dt)
 	
 	WINDOW_WIDTH, WINDOW_HEIGHT, flags = love.window.getMode();
 	
+	--local zeromark = ((0 - PIANOROLL_SCROLLX) * PIANOROLL_ZOOMX) + WINDOW_WIDTH / 2;
+	local zeromark = ((WINDOW_WIDTH / 2) / PIANOROLL_ZOOMX)
+	PIANOROLL_SCROLLX = math.max( PIANOROLL_SCROLLX, zeromark )
+	
+	PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
+	
 	updateGUI();
 end
 
 function play()
-	local ptrn = sng_mariodies.patterns[0];
+	local ptrn = sng_mariodies.patterns[playingPattern];
 	playChannel( ptrn.pulse2_notes, SRC_PULSE2 );
 	playChannel( ptrn.tri_notes,    SRC_TRI );
 	playChannel( ptrn.pulse1_notes, SRC_PULSE1 );
@@ -119,7 +130,7 @@ end
 function love.draw()
 	
 	-- Piano roll rendering
-	local ptrn = sng_mariodies.patterns[0];
+	local ptrn = sng_mariodies.patterns[ selectedPattern ];
 	
 	renderChannel( ptrn:getNotes(selectedChannel), { 1,   0, 1   });
 	--renderChannel( ptrn.tri_notes,    { 0,   0, 1   });
@@ -179,8 +190,7 @@ function initPitchTables()
 	FREQ_TABLE  = {};
 	-- Corresponding midi notes
 	NOTES       = {};
-	-- list of valid "val" values (internal note index) sorted from lowest pitch to highest pitch
-	--
+	-- list of valid "val" values (internal note index) indexed with the midi note (this is a reverse index of NOTES)
 	PITCH_VALS  = {};
 	
 	TIMER_STRT_INDEX = 0x7f10;
@@ -197,7 +207,11 @@ function initPitchTables()
 		
 		local pitchlog = math.log( freq/440 ) / math.log(2);
 		local noteval = math.floor((12 * pitchlog) + 69 + 0.5);
-		--print( noteval );
-		NOTES[ i ] = noteval;
+		--print( noteval )
+		
+		if (i ~= 04) then
+			NOTES[ i ] = noteval;
+			PITCH_VALS[ noteval ] = NOTES[ i ]
+		end
 	end
 end

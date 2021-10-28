@@ -13,6 +13,9 @@ GuiElement = {
 	dispwidth = 100,
 	dispheight = 100,
 	
+	text_color = {1,1,1},
+	bg_color   = {0,0,0},
+	
 	active = true,
 	bypassActiveForClicks = false, -- a few elements bypass the parents activity for click elements, such as the zoom buttons
 	visible = true,
@@ -37,13 +40,6 @@ GuiElement = {
 	-- referential properties
 	parent = nil,
 	children = {},
-	
-	-- if (parent){
-		-- parent.appendElement( this );
-	-- }else{
-		-- GuiHandler.elements.push(this);
-	-- }
-	-- GuiHandler.allElements.push(this);
 }
 
 function GuiElement:new(o)
@@ -249,7 +245,11 @@ function GuiElement:render()
 	
 	-- if (!this.transparent){ fill(0); } else { noFill(); blendMode(DIFFERENCE); }
 	-- stroke(255);
+	
+	love.graphics.setColor( self.bg_color );
+	love.graphics.rectangle( "fill", self.dispx, self.dispy, self.dispwidth, self.dispheight );
 		
+	love.graphics.setColor( self.text_color );
 	love.graphics.rectangle( "line", self.dispx, self.dispy, self.dispwidth, self.dispheight );
 	love.graphics.printf( self.text, self.dispx + self.padding, self.dispy + self.padding, self.dispwidth - (self.padding*2));
 	
@@ -303,9 +303,9 @@ function GuiElement:render()
 	-- }else{
 		-- this.lines = 0;
 	-- }
-	-- if (this.onRender){
-		-- this.onRender();
-	-- }
+	if (self.onRender) then
+		self:onRender();
+	end
 	
 	for i = 1, #self.children do
 		local e  = self.children[i];

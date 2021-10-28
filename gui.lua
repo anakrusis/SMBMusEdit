@@ -1,7 +1,8 @@
 function initGUI()
 	GUI_SCALE = 1; bypassGameClick = false;
 	-- scroll values for the two editors, pattern editor and piano roll editor
-	PATTERN_SCROLL = 0; PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0; PIANOROLL_ZOOMX = 4; PIANOROLL_ZOOMY = 1;
+	PATTERN_SCROLL = 0; PATTERN_ZOOMX = 1;
+	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0; PIANOROLL_ZOOMX = 4; PIANOROLL_ZOOMY = 1;
 	DIVIDER_POS = 400;
 	elements = {};
 	
@@ -56,15 +57,59 @@ function updatePatternGUI( song )
 	--GROUP_PTRN_EDIT.ELM_NOISE.children  = {}
 	
 	ElementPattern = GuiElement:new{
-		pattern = nil,
+		pattern = nil, -- numerical index
+		channel = nil, -- will be a key like "pulse1" etc.
 		height = 75,
+		bg_color = {1,0,1},
+		text_color = {0,0,0}
 	}
-	table.remove(elements);
+	table.remove(elements); -- it's a base class so dont let it go into the elements table lol
+	
+	function ElementPattern:onClick()
+		selectedPattern = self.pattern;
+		selectedChannel = self.channel;
+	end
+	function ElementPattern:onUpdate()
+		local p = selectedSong;
+		local ptrn = sng_mariodies.patterns[ self.pattern ];
+		self.width = ptrn.duration * PATTERN_ZOOMX;
+	end
+	
+	function ElementPattern:onRender()
+		local p = selectedSong;
+		local ptrn = sng_mariodies.patterns[ self.pattern ];
+		local notes = ptrn:getNotes( self.channel );
+		
+		local hiindex = ptrn:getHighestNote( self.channel );
+		local hinote  = notes[hiindex].pitch;
+		local loindex = ptrn:getLowestNote( self.channel );
+		local lonote  = notes[loindex].pitch;
+		
+		for i = 0, #notes do
+			local note = notes[i];
+			local x = note.starttime + self.dispx;
+			
+			local btm = (self.dispy + self.dispheight) - (2*self.padding);
+			local top = (self.dispy + self.padding)
+			local notey = ((note.pitch - lonote) * ( btm - top)) / ( hinote - lonote )
+			local y = self.dispy + self.dispheight - ( 2* self.padding ) - notey;
+			
+			--self.dispy + self.dispheight/2;
+			
+			local width = (note.duration / ptrn.duration) * self.dispwidth;
+			local height = (3);
+			
+			if (note.val ~= 04) then
+				love.graphics.setColor( self.text_color );
+				love.graphics.rectangle( "fill", x, y, width, height );
+			end
+		end
+	end
 	
 	for i = 0, song.patternCount - 1 do
 		local p = song.patterns[i];
 		
-		local p2 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE2, pattern = p};
+		local p2 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE2, pattern = i, channel = "pulse2"};
 	end
 end
 
