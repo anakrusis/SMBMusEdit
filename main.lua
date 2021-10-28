@@ -1,7 +1,7 @@
 require "song"
 require "bitwise"
-require "gui"
 require "guielement"
+require "gui"
 
 function love.load()
 	
@@ -18,6 +18,8 @@ function love.load()
 	
 	love.window.setTitle("SMBMusEdit 0.1.0a")
 	success = love.window.setMode( 800, 600, {resizable=true, minwidth=800, minheight=600} )
+	font = love.graphics.newFont("zeldadxt.ttf", 24)
+	love.graphics.setFont(font)
 	
 	local file = io.open("smbmusedit-2/mario.nes", "rb")
 	local content = file:read "*a" -- *a or *all reads the whole file
@@ -30,13 +32,11 @@ function love.load()
 	
 	initPitchTables();
 	initRhythmTables();
+	initGUI();
 	
 	songs = {};
 	sng_mariodies = Song:new{ name = "Mario Dies" };
 	sng_mariodies:parse(0x7926, 1);
-	
-	initGUI();
-	
 end
 
 function love.keypressed(key)
@@ -54,13 +54,22 @@ function love.mousepressed( x,y,button )
 end
 
 function love.mousemoved( x, y, dx, dy, istouch )
-	if love.mouse.isDown( 1 ) then
+	if love.mouse.isDown( 3 ) then
 		PIANOROLL_SCROLLX = PIANOROLL_SCROLLX - (dx / PIANOROLL_ZOOMX);
 		PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - (dy);
 	end
 end
 
+function love.wheelmoved( x, y )
+	if love.keyboard.isDown( "lctrl" ) then
+		PIANOROLL_ZOOMX = PIANOROLL_ZOOMX + (y / 2);
+	else
+		PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - (y * PIANOROLL_ZOOMY);
+	end
+end
+
 function love.update(dt)
+
 	if (playing) then
 		play();
 	end
@@ -112,9 +121,9 @@ function love.draw()
 	-- Piano roll rendering
 	local ptrn = sng_mariodies.patterns[0];
 	
-	renderChannel( ptrn.pulse2_notes, { 1,   0, 1   });
-	renderChannel( ptrn.tri_notes,    { 0,   0, 1   });
-	renderChannel( ptrn.pulse1_notes, { 0.5, 0, 0.5 });
+	renderChannel( ptrn:getNotes(selectedChannel), { 1,   0, 1   });
+	--renderChannel( ptrn.tri_notes,    { 0,   0, 1   });
+	--renderChannel( ptrn.pulse1_notes, { 0.5, 0, 0.5 });
 	
 	-- play line
 	love.graphics.setColor( 1,0,0 );
@@ -124,11 +133,11 @@ function love.draw()
 	-- masks out anything of the piano roll rendered above the divider
 	love.graphics.setColor( 0,0,0 );
 	love.graphics.rectangle("fill",0,0,WINDOW_WIDTH,WINDOW_HEIGHT/2);
-	love.graphics.setColor( 1,1,1,0.5 );
+	love.graphics.setColor( 1,1,1 );
 	love.graphics.line(0,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT/2);
 	
 	-- Pattern editor rendering
-	love.graphics.rectangle("fill",0,0,ptrn.duration,50);
+	--love.graphics.rectangle("fill",0,0,ptrn.duration,50);
 	
 	-- All the buttons and menus and stuff
 	renderGUI();
@@ -140,13 +149,13 @@ function renderChannel( notes, color )
 		local note = notes[i];
 		local rectx = PIANOROLL_ZOOMX * (note.starttime - PIANOROLL_SCROLLX) + WINDOW_WIDTH / 2; 
 		local recty = (600 - note.pitch * 10) - PIANOROLL_SCROLLY + WINDOW_HEIGHT/2 + WINDOW_HEIGHT/4;
-		local rectwidth = note.duration * 4;
+		local rectwidth = note.duration * PIANOROLL_ZOOMX;
 		
 		if ( note.val ~= 04) then
 			love.graphics.rectangle( "fill", rectx, recty, rectwidth, 10 )
 		end
 		
-		love.graphics.setColor( 1,1,1 );
+		love.graphics.setColor( 1,1,1,0.5 );
 		love.graphics.line(rectx,WINDOW_HEIGHT/2,rectx,WINDOW_HEIGHT);
 	end
 end
@@ -170,6 +179,9 @@ function initPitchTables()
 	FREQ_TABLE  = {};
 	-- Corresponding midi notes
 	NOTES       = {};
+	-- list of valid "val" values (internal note index) sorted from lowest pitch to highest pitch
+	--
+	PITCH_VALS  = {};
 	
 	TIMER_STRT_INDEX = 0x7f10;
 	for i = 0, 0x65, 2 do

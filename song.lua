@@ -40,9 +40,10 @@ function Song:parse( ptr_start_index, pointerscount )
 		p:parse( header_start_index );
 		
 		self.patterns[i] = p;
-		
-		--local tempo = rom[ MUSIC_STRT_INDEX + ptr ]; print( string.format( "%02X", tempo ));
 	end
+	self.patternCount = pointerscount;
+	
+	updatePatternGUI( self );
 end
 
 Pattern = {
@@ -77,6 +78,19 @@ function Pattern:new(o)
 	o.noise_notes  = {};
 	
 	return o
+end
+
+-- just a simple map. valid keys: "pulse1", "pulse2", "tri", "noise"
+function Pattern:getNotes(key)
+	if key == "pulse1" then
+		return self.pulse1_notes
+	elseif key == "pulse2" then
+		return self.pulse2_notes
+	elseif key == "tri" then
+		return self.tri_notes
+	elseif key == "noise" then
+		return self.noise_notes
+	end
 end
 
 -- This is the pulse 2 and triangle style note parsing
