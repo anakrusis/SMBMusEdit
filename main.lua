@@ -58,9 +58,22 @@ function love.mousepressed( x,y,button )
 		clickGUI(x,y);
 	end
 	if (bypassGameClick) then bypassGameClick = false; return; end
+	
+	-- left clicking in the piano roll places notes
+	if (button == 1) then
+		if love.mouse.getY() > DIVIDER_POS and love.mouse.getX() > SIDE_PIANO_WIDTH then
+		
+			local note = math.ceil(piano_roll_untray(y));
+			local tick = math.floor(piano_roll_untrax(x));
+			sng_mariodies.patterns[selectedPattern]:write(note,tick,selectedChannel);
+			
+			print(note .. " " .. tick);
+		end
+	end
 end
 
 function love.mousemoved( x, y, dx, dy, istouch )
+	-- middle click and dragging: pans the piano roll
 	if love.mouse.isDown( 3 ) then
 		if love.mouse.getY() > DIVIDER_POS then
 			PIANOROLL_SCROLLX = PIANOROLL_SCROLLX - (dx / PIANOROLL_ZOOMX);
@@ -69,9 +82,10 @@ function love.mousemoved( x, y, dx, dy, istouch )
 			PATTERN_SCROLL = PATTERN_SCROLL - (dx / PATTERN_ZOOMX);
 		end
 	end
+	-- dragging left and right in the side piano: zooms in and out the y axis of the piano roll
 	if love.mouse.isDown( 1 ) then
 		if love.mouse.getY() > DIVIDER_POS and love.mouse.getX() < SIDE_PIANO_WIDTH then
-			PIANOROLL_ZOOMY = PIANOROLL_ZOOMY - (dx);
+			PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
 			PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
 		end
 	end
@@ -198,8 +212,12 @@ function pianoroll_trax(x)
 end
 function pianoroll_tray(y)
 	return PIANOROLL_ZOOMY * (60 - y - PIANOROLL_SCROLLY ) + DIVIDER_POS + ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 );
-	
-	--(y * PIANOROLL_ZOOMY) - PIANOROLL_SCROLLY + DIVIDER_POS + ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 )
+end
+function piano_roll_untrax(x)
+	return ((x - SIDE_PIANO_WIDTH - (WINDOW_WIDTH / 2) ) / PIANOROLL_ZOOMX) + PIANOROLL_SCROLLX;
+end
+function piano_roll_untray(y)
+	return -((( y - DIVIDER_POS - ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 ) ) / PIANOROLL_ZOOMY ) + PIANOROLL_SCROLLY) + 60
 end
 
 function renderChannel( notes, color )
@@ -277,7 +295,7 @@ function initPitchTables()
 		
 		if (i ~= 04) then
 			NOTES[ i ] = noteval;
-			PITCH_VALS[ noteval ] = NOTES[ i ]
+			PITCH_VALS[ noteval ] = i
 		end
 	end
 end

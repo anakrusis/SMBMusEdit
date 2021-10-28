@@ -1,5 +1,6 @@
 Pattern = {
 	-- access into the rom from these values
+	header_start_index = nil,
 	pulse2_start_index = nil,
 	tri_start_index    = nil,
 	pulse1_start_index = nil,
@@ -11,10 +12,10 @@ Pattern = {
 	pulse1_notes = {},
 	noise_notes  = {},
 	
+	starttime = 0,
 	-- based on the sum of all note lengths of pulse2, the lead channel. 
 	-- the unit of measure is game ticks 
 	duration = 0,
-	starttime = 0,
 	
 	-- more like a pointer into a set of eight note durations
 	tempo    = nil,
@@ -33,8 +34,20 @@ function Pattern:new(o)
 	return o
 end
 
-function Pattern:write(midinote)
-	
+function Pattern:write(midinote, tick, channel)
+	local notes = self:getNotes(channel);
+	local existingnote;
+	for i = 0, #notes do
+		local note = notes[i];
+		if ( note.starttime + note.duration > tick ) then
+			existingnote = note;
+			break;
+		end
+	end
+	local ind = existingnote.rom_index;
+	rom[ind] = PITCH_VALS[midinote];
+	--existingnote.pitch = 80;
+	self:parse(self.header_start_index);
 end
 
 -- just a simple map. valid keys: "pulse1", "pulse2", "tri", "noise"
@@ -180,6 +193,7 @@ end
 
 -- Parses pattern, given a header start index ( hdr_strt_ind ) as an entry point
 function Pattern:parse( hdr_strt_ind )
+	self.header_start_index = hdr_strt_ind;
 	self.tempo = rom[ hdr_strt_ind ];
 	
 	local pulse2_lo = rom[ hdr_strt_ind + 1 ];
