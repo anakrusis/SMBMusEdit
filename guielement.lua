@@ -50,11 +50,11 @@ function GuiElement:new(o)
 	o.children = {};
 	
 	if (o.parent) then
-		print( o.name .. " added to " .. o.parent.name);
+		--print( o.name .. " added to " .. o.parent.name);
 		o.parent:appendElement( o );
 	else
 		--elements.push(this);
-		print( o.name .. " added to elements " );
+		--print( o.name .. " added to elements " );
 		table.insert(elements, o);
 	end
 	

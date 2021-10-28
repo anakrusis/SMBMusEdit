@@ -1,4 +1,5 @@
 require "song"
+require "pattern"
 require "bitwise"
 require "guielement"
 require "gui"
@@ -12,7 +13,7 @@ function love.load()
 	SRC_TRI = love.audio.newSource( "square.flac", "static" );
 	SRC_TRI:setLooping(true);
 	
-	playing = false; playpos = 0; -- currenttick
+	playing = false; playpos = 0; songpos = 0; -- current tick in pattern
 	playingPattern = 0;
 	
 	selectedChannel = "tri";
@@ -39,35 +40,46 @@ function love.load()
 	
 	songs = {};
 	sng_mariodies = Song:new{ name = "Mario Dies" };
-	sng_mariodies:parse(0x792D, 7);
+	sng_mariodies:parse(0x792D, 33);
 end
 
 function love.keypressed(key)
 
 	if key == "return" then
 		playing = not playing;
-		playpos = 0; playingPattern = selectedPattern;
+		playpos = 0; songpos = sng_mariodies.patterns[selectedPattern].starttime;
+		playingPattern = selectedPattern;
 		if (not playing) then stop(); end
 	end
 end
 
 function love.mousepressed( x,y,button )
-	clickGUI(x,y);
+	if (button ~= 3) then
+		clickGUI(x,y);
+	end
 	if (bypassGameClick) then bypassGameClick = false; return; end
 end
 
 function love.mousemoved( x, y, dx, dy, istouch )
 	if love.mouse.isDown( 3 ) then
-		PIANOROLL_SCROLLX = PIANOROLL_SCROLLX - (dx / PIANOROLL_ZOOMX);
-		PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - (dy);
+		if love.mouse.getY() > DIVIDER_POS then
+			PIANOROLL_SCROLLX = PIANOROLL_SCROLLX - (dx / PIANOROLL_ZOOMX);
+			PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - (dy);
+		else 
+			PATTERN_SCROLL = PATTERN_SCROLL - (dx / PATTERN_ZOOMX);
+		end
 	end
 end
 
 function love.wheelmoved( x, y )
 	if love.keyboard.isDown( "lctrl" ) then
-		PIANOROLL_ZOOMX = PIANOROLL_ZOOMX + (y / 2);
-		
-		PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
+		if love.mouse.getY() > DIVIDER_POS then
+			PIANOROLL_ZOOMX = PIANOROLL_ZOOMX + (y / 2);
+			PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
+		else
+			PATTERN_ZOOMX = PATTERN_ZOOMX + (y / 2);
+			PATTERN_ZOOMX = math.max(0.5, PATTERN_ZOOMX);
+		end
 	else
 		PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - (y * PIANOROLL_ZOOMY);
 	end
@@ -96,9 +108,23 @@ function play()
 	playChannel( ptrn.tri_notes,    SRC_TRI );
 	playChannel( ptrn.pulse1_notes, SRC_PULSE1 );
 	
-	if (playpos > ptrn.duration) then stop() end
+	if (playpos >= ptrn.duration) then 
+		if sng_mariodies.loop then
+			playingPattern = ( playingPattern + 1 ) % ( sng_mariodies.patternCount );
+			playpos = -1;
+			songpos = songpos - 1;
+			
+			-- loop back to the beginning of song
+			if playingPattern == 0 then
+				songpos = -1;
+			end
+		else
+			stop();
+		end
+	end
 	
 	playpos = playpos + 1;
+	songpos = songpos + 1;
 end
 
 function playChannel( notes, source )
@@ -132,34 +158,43 @@ function love.draw()
 	-- Piano roll rendering
 	local ptrn = sng_mariodies.patterns[ selectedPattern ];
 	
-	renderChannel( ptrn:getNotes(selectedChannel), { 1,   0, 1   });
-	--renderChannel( ptrn.tri_notes,    { 0,   0, 1   });
-	--renderChannel( ptrn.pulse1_notes, { 0.5, 0, 0.5 });
+	renderChannel( ptrn:getNotes(selectedChannel), CHANNEL_COLORS[selectedChannel]);
 	
 	-- play line
-	love.graphics.setColor( 1,0,0 );
-	local linex = ((playpos - PIANOROLL_SCROLLX) * PIANOROLL_ZOOMX) + WINDOW_WIDTH / 2;
-	love.graphics.line(linex,WINDOW_HEIGHT/2,linex,WINDOW_HEIGHT);
+	if (playingPattern == selectedPattern) then
+		love.graphics.setColor( 1,0,0 );
+		local linex = pianoroll_trax(playpos);
+		love.graphics.line(linex,DIVIDER_POS,linex,WINDOW_HEIGHT);
+	end
 	
 	-- masks out anything of the piano roll rendered above the divider
 	love.graphics.setColor( 0,0,0 );
-	love.graphics.rectangle("fill",0,0,WINDOW_WIDTH,WINDOW_HEIGHT/2);
+	love.graphics.rectangle("fill",0,0,WINDOW_WIDTH,DIVIDER_POS);
 	love.graphics.setColor( 1,1,1 );
-	love.graphics.line(0,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT/2);
+	love.graphics.line(0,DIVIDER_POS,WINDOW_WIDTH,DIVIDER_POS);
 	
 	-- Pattern editor rendering
 	--love.graphics.rectangle("fill",0,0,ptrn.duration,50);
 	
 	-- All the buttons and menus and stuff
 	renderGUI();
+	
+	-- pattern editor play line
+	love.graphics.setColor( 1,0,0 );
+	local linex = ((songpos - PATTERN_SCROLL) * PATTERN_ZOOMX) --+ WINDOW_WIDTH / 2;
+	love.graphics.line(linex,0,linex,DIVIDER_POS);
+end
+
+function pianoroll_trax(x)
+	return PIANOROLL_ZOOMX * (x - PIANOROLL_SCROLLX) + (WINDOW_WIDTH / 2) + SIDE_PIANO_WIDTH; 
 end
 
 function renderChannel( notes, color )
 	for i = 0, #notes do
 		love.graphics.setColor( color );
 		local note = notes[i];
-		local rectx = PIANOROLL_ZOOMX * (note.starttime - PIANOROLL_SCROLLX) + WINDOW_WIDTH / 2; 
-		local recty = (600 - note.pitch * 10) - PIANOROLL_SCROLLY + WINDOW_HEIGHT/2 + WINDOW_HEIGHT/4;
+		local rectx = pianoroll_trax( note.starttime );
+		local recty = (600 - note.pitch * 10) - PIANOROLL_SCROLLY + DIVIDER_POS + ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 ) -- + WINDOW_HEIGHT/2 + WINDOW_HEIGHT/4;
 		local rectwidth = note.duration * PIANOROLL_ZOOMX;
 		
 		if ( note.val ~= 04) then
@@ -167,8 +202,12 @@ function renderChannel( notes, color )
 		end
 		
 		love.graphics.setColor( 1,1,1,0.5 );
-		love.graphics.line(rectx,WINDOW_HEIGHT/2,rectx,WINDOW_HEIGHT);
+		love.graphics.line(rectx,DIVIDER_POS,rectx,WINDOW_HEIGHT);
 	end
+	
+	local dur = sng_mariodies.patterns[selectedPattern].duration;
+	local endx = pianoroll_trax(dur);
+	love.graphics.line(endx,DIVIDER_POS,endx,WINDOW_HEIGHT);
 end
 
 function initRhythmTables()
