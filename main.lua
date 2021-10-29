@@ -6,11 +6,11 @@ require "gui"
 
 function love.load()
 	
-	SRC_PULSE2 = love.audio.newSource( "square.flac", "static" );
+	SRC_PULSE2 = love.audio.newSource( "square.wav", "static" );
 	SRC_PULSE2:setLooping(true);
-	SRC_PULSE1 = love.audio.newSource( "square.flac", "static" );
+	SRC_PULSE1 = love.audio.newSource( "square.wav", "static" );
 	SRC_PULSE1:setLooping(true);
-	SRC_TRI = love.audio.newSource( "square.flac", "static" );
+	SRC_TRI = love.audio.newSource( "tri.wav", "static" );
 	SRC_TRI:setLooping(true);
 	
 	playing = false; playpos = 0; songpos = 0; -- current tick in pattern
@@ -87,6 +87,14 @@ function love.mousemoved( x, y, dx, dy, istouch )
 		if love.mouse.getY() > DIVIDER_POS and love.mouse.getX() < SIDE_PIANO_WIDTH then
 			PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
 			PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
+		end
+		
+		if love.mouse.getY() > DIVIDER_POS then
+			if math.abs(dx) > 1 then
+				local tick = math.floor(piano_roll_untrax(x));
+				local increasing = (dx > 0);
+				sng_mariodies.patterns[selectedPattern]:changeRhythm(increasing,tick,selectedChannel);
+			end
 		end
 	end
 end
@@ -174,9 +182,13 @@ function stop()
 end
 
 function love.draw()
-	
 	-- Piano roll rendering
 	local ptrn = sng_mariodies.patterns[ selectedPattern ];
+	
+	-- background of the piano roll (red)
+	love.graphics.setColor( 0.12,0,0 );
+	love.graphics.rectangle("fill",0,DIVIDER_POS,WINDOW_WIDTH,WINDOW_HEIGHT);
+	renderAvailableNotes( selectedChannel );
 	
 	renderChannel( ptrn:getNotes(selectedChannel), CHANNEL_COLORS[selectedChannel]);
 	
@@ -220,6 +232,36 @@ function piano_roll_untray(y)
 	return -((( y - DIVIDER_POS - ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 ) ) / PIANOROLL_ZOOMY ) + PIANOROLL_SCROLLY) + 60
 end
 
+function renderAvailableNotes( channel ) 
+	for i = 0, #NOTES do
+		local ind = i;
+		if ( channel == "pulse1" ) then
+			ind = bitwise.band( ind, 0x3e ) -- 0011 1110
+		end
+		
+		if NOTES[ind] ~= nil then
+			local pitch = NOTES[ind];
+			if ( channel == "tri" ) then
+				pitch = pitch - 12;
+			end
+			
+			local recty = pianoroll_tray( pitch );
+			local m = (pitch) % 12;
+			if ( m == 1 or m == 3 or m == 6 or m == 8 or m == 10 ) then
+				love.graphics.setColor( 0.00,0.00,0.00 );
+			else 
+				love.graphics.setColor( 0.06,0.06,0.06 );
+			end
+			love.graphics.rectangle( "fill", 0, recty, WINDOW_WIDTH, PIANOROLL_ZOOMY )
+			
+			--love.graphics.setLineWidth(3);
+			love.graphics.setColor( 0.00,0.00,0.00,1 );
+			love.graphics.line(0,recty+1,WINDOW_WIDTH,recty+1);
+			--love.graphics.setLineWidth(1);
+		end
+	end
+end
+
 function renderChannel( notes, color )
 	for i = 0, #notes do
 		love.graphics.setColor( color );
@@ -232,7 +274,7 @@ function renderChannel( notes, color )
 			love.graphics.rectangle( "fill", rectx, recty, rectwidth, PIANOROLL_ZOOMY )
 		end
 		
-		love.graphics.setColor( 1,1,1,0.5 );
+		love.graphics.setColor( 0.5,0.5,0.5 );
 		love.graphics.line(rectx,DIVIDER_POS,rectx,WINDOW_HEIGHT);
 	end
 	
@@ -242,7 +284,7 @@ function renderChannel( notes, color )
 end
 
 function renderSidePiano()
-	for i = 40, 100 do
+	for i = 31, 103 do
 		local keyy = pianoroll_tray( i );
 		
 		local m = (i) % 12;

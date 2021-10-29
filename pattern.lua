@@ -34,6 +34,44 @@ function Pattern:new(o)
 	return o
 end
 
+function Pattern:changeRhythm( increasing, tick, channel )
+	local notes = self:getNotes(channel);
+	local existingnote;
+	for i = 0, #notes do
+		local note = notes[i];
+		if ( note.starttime + note.duration > tick ) then
+			existingnote = note;
+			break;
+		end
+	end
+	if (not existingnote) then return; end
+	
+	if (tick < ( existingnote.duration * 0.8 ) + existingnote.starttime) then return; end
+	
+	-- for now it's just finding the nearest tempo value in whatever direction specified (increasing or decreasing)
+	local nearestdiff = 100000; local ind;
+	
+	for i = self.tempo, self.tempo+7 do
+	
+		local ctv = RHYTHM_TABLE[i]; -- current tempo value
+		if (math.abs(existingnote.duration - ctv) < nearestdiff and ctv ~= existingnote.duration and ( ctv > existingnote.duration ) == increasing ) then
+			nearestdiff = ctv; ind = i;
+		end
+		
+	end
+	newdur = RHYTHM_TABLE[ind];
+	if not newdur then return; end 
+	
+	print("current dur: " .. existingnote.duration .. " new dur: " .. newdur )
+	
+	local previous = rom[existingnote.rom_index - 1];
+	if (previous >= 0x80 and previous <= 0x87) then
+		rom[existingnote.rom_index - 1] = 0x80 + ind - self.tempo;
+	end
+	
+	self:parse(self.header_start_index);
+end
+
 function Pattern:write(midinote, tick, channel)
 	local notes = self:getNotes(channel);
 	local existingnote;
@@ -46,12 +84,33 @@ function Pattern:write(midinote, tick, channel)
 	end
 	if (not existingnote) then return; end
 	
+	if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then return; end
+	
 	local newval;
-	if (channel == "pulse2") then
+	if (channel == "pulse2" or channel == "pulse1") then
 		newval = PITCH_VALS[midinote];
 	end
+	if (channel == "tri") then
+		newval = PITCH_VALS[midinote + 12];
+	end
+	
+	-- clicking on the note removes it
+	if (existingnote.pitch == midinote) then
+		newval = 04;
+	end
+	
+	if (not newval) then return; end
 	
 	local ind = existingnote.rom_index;
+	
+	-- retains the rhythm value of the original note if pulse1
+	if (channel == "pulse1") then
+		local rhythm = bitwise.band(rom[ind], 0xc1); -- 1100 0001 
+		local pitch  = bitwise.band(newval,   0x3e); -- 0011 1110
+		
+		newval = rhythm + pitch;
+	end
+	
 	rom[ind] = newval;
 	--existingnote.pitch = 80;
 	self:parse(self.header_start_index);

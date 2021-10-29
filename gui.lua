@@ -36,11 +36,16 @@ function initGUI()
 	function GROUP_PTRN_EDIT.ELM_PULSE1:onUpdate()
 		self.width = 2000;
 	end
+	GROUP_PTRN_EDIT.ELM_TRI = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_PTRN_EDIT, name="tricntr", autopos = "left", autosizey = true, padding = 0};
+	function GROUP_PTRN_EDIT.ELM_TRI:onUpdate()
+		self.width = 2000;
+	end
 	
 	GROUP_FILE = GuiElement:new{x=0, y=55, width=500, height=3, name="file_container", autopos = "left", autosize = true};
 	GROUP_FILE:hide();
 	local export = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_FILE, name="export", text="Export ROM"};
 	function export:onClick()
+		GROUP_FILE:hide(); openGUIWindow(GROUP_TOPBAR);
 		exportROM();
 	end
 	-- for i = 1, #GROUP_FILE.children do
@@ -122,9 +127,11 @@ function updatePatternGUI( song )
 		local notes = ptrn:getNotes( self.channel );
 		
 		local hiindex = ptrn:getHighestNote( self.channel );
-		local hinote  = notes[hiindex].pitch;
+		local hinote  = notes[hiindex];
 		local loindex = ptrn:getLowestNote( self.channel );
-		local lonote  = notes[loindex].pitch;
+		local lonote  = notes[loindex];
+		
+		if (not hinote or not lonote) then return; end
 		
 		for i = 0, #notes do
 			local note = notes[i];
@@ -134,7 +141,7 @@ function updatePatternGUI( song )
 			
 			local btm = (self.dispy + self.dispheight) - (2*padding);
 			local top = (self.dispy + padding)
-			local notey = ((note.pitch - lonote) * ( btm - top)) / ( hinote - lonote )
+			local notey = ((note.pitch - lonote.pitch) * ( btm - top)) / ( hinote.pitch - lonote.pitch )
 			local y = self.dispy + self.dispheight - ( 2* padding ) - notey;
 			
 			--self.dispy + self.dispheight/2;
@@ -154,6 +161,7 @@ function updatePatternGUI( song )
 		
 		local p2 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE2, pattern = i, channel = "pulse2"};
 		local p1 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE1, pattern = i, channel = "pulse1"};
+		local tr = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_TRI,    pattern = i, channel = "tri"};
 	end
 end
 
