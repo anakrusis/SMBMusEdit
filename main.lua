@@ -242,7 +242,7 @@ function renderChannel( notes, color )
 end
 
 function renderSidePiano()
-	for i = 40, 90 do
+	for i = 40, 100 do
 		local keyy = pianoroll_tray( i );
 		
 		local m = (i) % 12;
@@ -298,4 +298,14 @@ function initPitchTables()
 			PITCH_VALS[ noteval ] = i
 		end
 	end
+end
+
+function exportROM()
+	local output = ""
+	local file = io.open("smbmusedit-2/mario.nes", "wb")
+	for i = 0, table.getn(rom) do 
+		output = output .. string.char(rom[i])
+	end
+	file:write(output)
+	file:close()
 end

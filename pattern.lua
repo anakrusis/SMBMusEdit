@@ -44,8 +44,15 @@ function Pattern:write(midinote, tick, channel)
 			break;
 		end
 	end
+	if (not existingnote) then return; end
+	
+	local newval;
+	if (channel == "pulse2") then
+		newval = PITCH_VALS[midinote];
+	end
+	
 	local ind = existingnote.rom_index;
-	rom[ind] = PITCH_VALS[midinote];
+	rom[ind] = newval;
 	--existingnote.pitch = 80;
 	self:parse(self.header_start_index);
 end

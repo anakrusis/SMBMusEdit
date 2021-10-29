@@ -241,7 +241,7 @@ end
 	
 -- This is recursive, and it goes from a top parent element through all the children of the tree
 function GuiElement:render()
-	-- if (!this.visible || this.ticksShown < 3) { return; }
+	if (not self.visible) then return; end
 	
 	-- if (!this.transparent){ fill(0); } else { noFill(); blendMode(DIFFERENCE); }
 	-- stroke(255);
@@ -321,13 +321,12 @@ end
 
 -- Likewise for the following methods
 function GuiElement:show()
-	-- this.visible = true;
-	-- for (var i = 0; i < this.children.length; i++){
-		-- var e  = this.children[i];
-		-- e.show();
-	-- }
-	-- --this.onUpdate();
-	-- this.onShow();
+	self.visible = true;
+	for i = 1, #self.children do
+		local e = self.children[i];
+		e:show();
+	end
+	self:onShow();
 end
 
 function GuiElement:onShow()
@@ -335,9 +334,9 @@ function GuiElement:onShow()
 end
 
 function GuiElement:hide()
-	-- this.visible = false;
-	-- for (var i = 0; i < this.children.length; i++){
-		-- var e  = this.children[i];
-		-- e.hide();
-	-- }
+	self.visible = false;
+	for i = 1, #self.children do
+		local e  = self.children[i];
+		e:hide();
+	end
 end

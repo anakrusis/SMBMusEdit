@@ -17,6 +17,9 @@ function initGUI()
 	end
 	
 	local file = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="file", text="File"};
+	function file:onClick()
+		openGUIWindow( GROUP_FILE );
+	end
 	local edit = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="edit", text="Edit"};
 	
 	GROUP_PTRN_EDIT = GuiElement:new{x=-50, y=60, width=500, height=60, name="ptrneditor", autopos = "top", autosizey = true, padding = 0};
@@ -33,6 +36,37 @@ function initGUI()
 	function GROUP_PTRN_EDIT.ELM_PULSE1:onUpdate()
 		self.width = 2000;
 	end
+	
+	GROUP_FILE = GuiElement:new{x=0, y=55, width=500, height=3, name="file_container", autopos = "left", autosize = true};
+	GROUP_FILE:hide();
+	local export = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_FILE, name="export", text="Export ROM"};
+	function export:onClick()
+		exportROM();
+	end
+	-- for i = 1, #GROUP_FILE.children do
+		-- local e  = GROUP_FILE.children[i];
+		-- print(e.width);
+	-- end
+	
+	openGUIWindow(GROUP_TOPBAR);
+end
+
+function openGUIWindow( element )
+	-- sets the previous outermost element to inactive
+	for i = 1, #elements do
+		local e = elements[i];
+		if (e.active) then
+			e.active = false;
+		end
+	end
+	
+	-- Special case where these elements are inseperable, TODO maybe put these into a bigger super-group
+	if (element == GROUP_TOPBAR) then
+		GROUP_PTRN_EDIT.active = true;  GROUP_PTRN_EDIT:show();
+	end
+	
+	element.active = true;
+	element:show();
 end
 
 function clickGUI(x,y)
