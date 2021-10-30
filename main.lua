@@ -1,5 +1,6 @@
 require "song"
 require "pattern"
+require "rom"
 require "bitwise"
 require "guielement"
 require "gui"
@@ -25,14 +26,7 @@ function love.load()
 	font = love.graphics.newFont("zeldadxt.ttf", 24)
 	love.graphics.setFont(font)
 	
-	local file = io.open("smbmusedit-2/mario.nes", "rb")
-	local content = file:read "*a" -- *a or *all reads the whole file
-	file:close()
-		
-	rom = {};	
-	for i = 1, #content do
-		rom[i - 1] = string.byte(string.sub(content,i,i))
-	end
+	rom = ROM:new(); rom:import("smbmusedit-2/mario.nes");
 	
 	initPitchTables();
 	initRhythmTables();
@@ -317,7 +311,7 @@ function initRhythmTables()
 	RHYTHM_STRT_INDEX = 0x7F76;
 	
 	for i = 0, 0x2f do
-		RHYTHM_TABLE[i] = rom[ RHYTHM_STRT_INDEX + i ];
+		RHYTHM_TABLE[i] = rom:get( RHYTHM_STRT_INDEX + i );
 	end
 end
 
@@ -337,9 +331,9 @@ function initPitchTables()
 	TIMER_STRT_INDEX = 0x7f10;
 	for i = 0, 0x65, 2 do
 		local ind = ( i + TIMER_STRT_INDEX );
-		TIMER_TABLE[ i ] = rom[ ind ];
+		TIMER_TABLE[ i ] = rom:get( ind );
 		
-		local timer = (0x100 * rom [ ind ]) + rom[ ind + 1 ];
+		local timer = (0x100 * rom:get( ind )) + rom:get( ind + 1 );
 		--print( string.format( "%02X", timer) );
 		local freq = 1789773 / ( 16 * ( timer + 1 ) );
 		--print( freq .. "Hz" );

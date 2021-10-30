@@ -58,9 +58,9 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 	
 	print("you tried: " .. relativedur .. " new dur: " .. newdur )
 	
-	local previous = rom[existingnote.rom_index - 1];
+	local previous = rom:get(existingnote.rom_index - 1);
 	if (previous >= 0x80 and previous <= 0x87) then
-		rom[existingnote.rom_index - 1] = 0x80 + ind - self.tempo;
+		rom:put(existingnote.rom_index - 1, 0x80 + ind - self.tempo);
 	end
 	
 	self:parse(self.header_start_index);
@@ -88,13 +88,13 @@ function Pattern:writePitch(midinote, existingnote, channel)
 	
 	-- retains the rhythm value of the original note if pulse1
 	if (channel == "pulse1") then
-		local rhythm = bitwise.band(rom[ind], 0xc1); -- 1100 0001 
-		local pitch  = bitwise.band(newval,   0x3e); -- 0011 1110
+		local rhythm = bitwise.band(rom:get(ind), 0xc1); -- 1100 0001 
+		local pitch  = bitwise.band(newval,       0x3e); -- 0011 1110
 		
 		newval = rhythm + pitch;
 	end
 	
-	rom[ind] = newval;
+	rom:put(ind, newval);
 	--existingnote.pitch = 80;
 	self:parse(self.header_start_index);
 end
@@ -169,7 +169,7 @@ function Pattern:parseNotes(start_index, target_table)
 	-- (...in particular if the terminating 0x00 is accidently left absent from the pattern, it won't keep going forever here in this program)
 	for i = 0x00, 0xff do
 		local ind = start_index + i;
-		local val = rom[ind];
+		local val = rom:get(ind);
 		--print( string.format( "%02X", val ));
 		
 		if self.duration > 0 and duration >= self.duration then
@@ -217,7 +217,7 @@ function Pattern:parsePulse1Notes( start_index, target_table )
 	
 	for i = 0x00, 0xff do
 		local ind = start_index + i;
-		local val = rom[ind];
+		local val = rom:get(ind);
 		
 		if self.duration > 0 and duration >= self.duration then
 			return;
@@ -263,16 +263,16 @@ function Pattern:parse( hdr_strt_ind )
 	self.noise_notes  = {};
 
 	self.header_start_index = hdr_strt_ind;
-	self.tempo = rom[ hdr_strt_ind ];
+	self.tempo = rom:get( hdr_strt_ind );
 	
-	local pulse2_lo = rom[ hdr_strt_ind + 1 ];
-	local pulse2_hi = rom[ hdr_strt_ind + 2 ];
+	local pulse2_lo = rom:get( hdr_strt_ind + 1 );
+	local pulse2_hi = rom:get( hdr_strt_ind + 2 );
 	-- 0x8000 is the start of PRG ROM as seen by the NES memory mapping.
 	-- Also 0x10 is added on because thats the size of the iNES header (not seen by NES)
 	self.pulse2_start_index = ( pulse2_hi * 0x100 ) + pulse2_lo - 0x8000 + 0x10;
 	
-	self.tri_start_index    = self.pulse2_start_index + rom[ hdr_strt_ind + 3 ];
-	self.pulse1_start_index = self.pulse2_start_index + rom[ hdr_strt_ind + 4 ];
+	self.tri_start_index    = self.pulse2_start_index + rom:get( hdr_strt_ind + 3 );
+	self.pulse1_start_index = self.pulse2_start_index + rom:get( hdr_strt_ind + 4 );
 	
 	-- Duration of pattern is decided by the length of the pulse 2 channel
 	self.duration = self:parseNotes(self.pulse2_start_index, self.pulse2_notes);

@@ -38,7 +38,7 @@ function Song:parse( ptr_start_index, pointerscount )
 		local p = Pattern:new();
 		p.starttime = duration;
 	
-		local ptr = rom[ ptr_start_index + i ]; --print( string.format( "%02X", ptr ));
+		local ptr = rom:get( ptr_start_index + i ); --print( string.format( "%02X", ptr ));
 		local header_start_index = MUSIC_STRT_INDEX + ptr;
 		duration = duration + p:parse( header_start_index );
 		
