@@ -34,35 +34,29 @@ function Pattern:new(o)
 	return o
 end
 
-function Pattern:changeRhythm( increasing, tick, channel )
-	local notes = self:getNotes(channel);
-	local existingnote;
-	for i = 0, #notes do
-		local note = notes[i];
-		if ( note.starttime + note.duration > tick ) then
-			existingnote = note;
-			break;
-		end
-	end
-	if (not existingnote) then return; end
+function Pattern:changeRhythm( tick, existingnote, channel )
+	local relativedur = tick - existingnote.starttime;
 	
-	if (tick < ( existingnote.duration * 0.8 ) + existingnote.starttime) then return; end
-	
-	-- for now it's just finding the nearest tempo value in whatever direction specified (increasing or decreasing)
+	-- -- for now it's just finding the nearest tempo value in whatever direction specified (increasing or decreasing)
 	local nearestdiff = 100000; local ind;
 	
 	for i = self.tempo, self.tempo+7 do
 	
 		local ctv = RHYTHM_TABLE[i]; -- current tempo value
-		if (math.abs(existingnote.duration - ctv) < nearestdiff and ctv ~= existingnote.duration and ( ctv > existingnote.duration ) == increasing ) then
-			nearestdiff = ctv; ind = i;
+		--local hyd = existingnote.starttime + ctv; -- hypothetical duration
+		local diff = math.abs(ctv - relativedur);
+		
+		if (diff < nearestdiff) then
+		
+		--if (math.abs(existingnote.duration - ctv) < nearestdiff and ctv ~= existingnote.duration and ( ctv > existingnote.duration ) == increasing ) then
+			nearestdiff = diff; ind = i;
 		end
 		
 	end
 	newdur = RHYTHM_TABLE[ind];
 	if not newdur then return; end 
 	
-	print("current dur: " .. existingnote.duration .. " new dur: " .. newdur )
+	print("you tried: " .. relativedur .. " new dur: " .. newdur )
 	
 	local previous = rom[existingnote.rom_index - 1];
 	if (previous >= 0x80 and previous <= 0x87) then
@@ -72,19 +66,8 @@ function Pattern:changeRhythm( increasing, tick, channel )
 	self:parse(self.header_start_index);
 end
 
-function Pattern:write(midinote, tick, channel)
-	local notes = self:getNotes(channel);
-	local existingnote;
-	for i = 0, #notes do
-		local note = notes[i];
-		if ( note.starttime + note.duration > tick ) then
-			existingnote = note;
-			break;
-		end
-	end
-	if (not existingnote) then return; end
-	
-	if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then return; end
+function Pattern:writePitch(midinote, existingnote, channel)
+	--if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then return; end
 	
 	local newval;
 	if (channel == "pulse2" or channel == "pulse1") then
@@ -114,6 +97,19 @@ function Pattern:write(midinote, tick, channel)
 	rom[ind] = newval;
 	--existingnote.pitch = 80;
 	self:parse(self.header_start_index);
+end
+
+function Pattern:getNoteAtTick(tick, channel)
+	local notes = self:getNotes(channel);
+	local existingnote;
+	for i = 0, #notes do
+		local note = notes[i];
+		if ( note.starttime + note.duration > tick ) then
+			existingnote = note;
+			break;
+		end
+	end
+	return existingnote;
 end
 
 -- just a simple map. valid keys: "pulse1", "pulse2", "tri", "noise"
@@ -259,6 +255,13 @@ end
 
 -- Parses pattern, given a header start index ( hdr_strt_ind ) as an entry point
 function Pattern:parse( hdr_strt_ind )
+
+	self.duration = 0;
+	self.pulse2_notes = {};
+	self.tri_notes    = {};
+	self.pulse1_notes = {};
+	self.noise_notes  = {};
+
 	self.header_start_index = hdr_strt_ind;
 	self.tempo = rom[ hdr_strt_ind ];
 	

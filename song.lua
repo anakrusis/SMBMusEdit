@@ -26,7 +26,7 @@ function Song:new(o)
 	return o
 end
 
--- begins traversal with the address to a pointer (will be around $791D and afterwards) and reads pointers sequentally
+-- begins traversal with the address to a pointer (starting at $791D and afterwards) and reads pointers sequentally
 -- pointerscount will always be 1 except for the overworld theme which takes like a ton of pointers
 function Song:parse( ptr_start_index, pointerscount )
 	currentsong = self;

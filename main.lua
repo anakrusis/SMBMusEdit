@@ -59,15 +59,23 @@ function love.mousepressed( x,y,button )
 	end
 	if (bypassGameClick) then bypassGameClick = false; return; end
 	
-	-- left clicking in the piano roll places notes
+	-- left clicking on the piano roll has several functions:
 	if (button == 1) then
 		if love.mouse.getY() > DIVIDER_POS and love.mouse.getX() > SIDE_PIANO_WIDTH then
 		
 			local note = math.ceil(piano_roll_untray(y));
 			local tick = math.floor(piano_roll_untrax(x));
-			sng_mariodies.patterns[selectedPattern]:write(note,tick,selectedChannel);
+			local ptrn = sng_mariodies.patterns[selectedPattern];
+			local existingnote = ptrn:getNoteAtTick(tick, selectedChannel);
 			
-			print(note .. " " .. tick);
+			-- clicking the right edge of the note: initates dragging for rhythm changing
+			if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
+				DRAGGING_NOTE = existingnote;
+				
+			-- otherwise places/removes notes
+			else
+				ptrn:writePitch(note,existingnote,selectedChannel);
+			end
 		end
 	end
 end
@@ -87,15 +95,22 @@ function love.mousemoved( x, y, dx, dy, istouch )
 		if love.mouse.getY() > DIVIDER_POS and love.mouse.getX() < SIDE_PIANO_WIDTH then
 			PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
 			PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
-		end
 		
-		if love.mouse.getY() > DIVIDER_POS then
-			if math.abs(dx) > 1 then
+	-- dragging left and right on a note: edits the rhythm
+		elseif love.mouse.getY() > DIVIDER_POS then
+			if (DRAGGING_NOTE) then
 				local tick = math.floor(piano_roll_untrax(x));
-				local increasing = (dx > 0);
-				sng_mariodies.patterns[selectedPattern]:changeRhythm(increasing,tick,selectedChannel);
+				sng_mariodies.patterns[selectedPattern]:changeRhythm( tick, DRAGGING_NOTE, selectedChannel )
 			end
 		end
+		
+		-- if love.mouse.getY() > DIVIDER_POS then
+			-- if math.abs(dx) > 1 then
+				-- local tick = math.floor(piano_roll_untrax(x));
+				-- local increasing = (dx > 0);
+				-- sng_mariodies.patterns[selectedPattern]:changeRhythm(increasing,tick,selectedChannel);
+			-- end
+		-- end
 	end
 end
 
