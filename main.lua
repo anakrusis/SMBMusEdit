@@ -35,13 +35,13 @@ function love.load()
 	SONG_COUNT = 0;
 	songs = {};
 	local s1 = Song:new{ name = "Starman" };
-	--s1:parse(0x792b, 1);
-	local s2 = Song:new{ name = "Overworld" };
-	s2:parse(0x792D, 33);
+	s1:parse(0x792b, 1, true);
+	local s2 = Song:new{ name = "Underwater" };
+	s2:parse(0x7926, 1, true);
+	local s3 = Song:new{ name = "Overworld" };
+	s3:parse(0x792d, 33,true);
 	
-	for i = 0, #songs do
-		--print(songs[i].name .. " " .. songs[i].songindex);
-	end
+	updatePatternGUI( songs[selectedSong] );
 end
 
 function love.keypressed(key)

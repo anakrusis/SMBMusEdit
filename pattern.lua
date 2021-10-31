@@ -22,6 +22,9 @@ Pattern = {
 	
 	-- refers back to the main song index
 	songindex = nil,
+	patternindex = nil,
+	
+	hasNoise = true,
 }
 
 function Pattern:new(o)
@@ -179,6 +182,10 @@ function Pattern:parseNotes(start_index, target_table)
 			return duration;
 		end
 		
+		local b = rom.data[ind]; -- byte object
+		table.insert(b.song_claims, self.songindex);
+		table.insert(b.ptrn_claims, self.patternindex);
+		
 		-- Pattern terminator
 		if val == 0x00 then
 			return duration;
@@ -225,6 +232,10 @@ function Pattern:parsePulse1Notes( start_index, target_table )
 		if self.duration > 0 and duration >= self.duration then
 			return;
 		end
+		
+		local b = rom.data[ind]; -- byte object
+		table.insert(b.song_claims, self.songindex);
+		table.insert(b.ptrn_claims, self.patternindex);
 		
 		--print( "Val: " .. string.format( "%02X", val ));
 		
@@ -277,10 +288,18 @@ function Pattern:parse( hdr_strt_ind )
 	self.tri_start_index    = self.pulse2_start_index + rom:get( hdr_strt_ind + 3 );
 	self.pulse1_start_index = self.pulse2_start_index + rom:get( hdr_strt_ind + 4 );
 	
+	if (self.hasNoise) then
+		self.noise_start_index = self.pulse2_start_index + rom:get( hdr_strt_ind + 5 );
+	end
+	
 	-- Duration of pattern is decided by the length of the pulse 2 channel
 	self.duration = self:parseNotes(self.pulse2_start_index, self.pulse2_notes);
 	self:parseNotes(self.tri_start_index, self.tri_notes);
 	self:parsePulse1Notes(self.pulse1_start_index, self.pulse1_notes);
+	
+	if (self.hasNoise) then
+		self:parsePulse1Notes(self.noise_start_index, self.noise_notes);
+	end
 	
 	--print("Lowest note: " .. self:getLowestNote("pulse2"));
 	return self.duration;

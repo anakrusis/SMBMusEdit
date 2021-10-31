@@ -116,10 +116,10 @@ function GuiElement:update()
 		else
 			
 			if (self.autocenterX) then
-				self.x = width/GUI_SCALE/2 - self.width/2;
+				self.x = WINDOW_WIDTH/GUI_SCALE/2 - self.width/2;
 			end
 			if (self.autocenterY) then
-				self.y = height/GUI_SCALE/2 - self.height/2;
+				self.y = WINDOW_HEIGHT/GUI_SCALE/2 - self.height/2;
 			end
 			
 			self.dispx = self.x + self.padding; self.dispy = self.y + self.padding;

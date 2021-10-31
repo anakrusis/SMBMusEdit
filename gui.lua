@@ -24,6 +24,9 @@ function initGUI()
 		openGUIWindow( GROUP_FILE );
 	end
 	local edit = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="edit", text="Edit"};
+	function edit:onClick()
+		openGUIWindow( GROUP_EDIT );
+	end
 	
 	GROUP_PTRN_EDIT = GuiElement:new{x=-50, y=60, width=500, height=60, name="ptrneditor", autopos = "top", autosizey = true, padding = 0};
 	function GROUP_PTRN_EDIT:onUpdate()
@@ -51,10 +54,58 @@ function initGUI()
 		GROUP_FILE:hide(); openGUIWindow(GROUP_TOPBAR);
 		rom:export("smbmusedit-2/mario.nes");
 	end
-	-- for i = 1, #GROUP_FILE.children do
-		-- local e  = GROUP_FILE.children[i];
-		-- print(e.width);
-	-- end
+	
+	GROUP_EDIT = GuiElement:new{x=55, y=55, width=500, height=3, name="edit_container", autopos = "left", autosize = true}; GROUP_EDIT:hide();
+	local optimize = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_EDIT, name="optimize", text="Optimize..."};
+	function optimize:onClick()
+		openGUIWindow( GROUP_OPTIMIZE );
+	end
+	
+	GROUP_OPTIMIZE = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_OPTIMIZE:hide();
+	local optimize = GuiElement:new{x=0,y=0,width=600,height=600,parent=GROUP_OPTIMIZE, text=""};
+	function optimize:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		self.text = "               " ..  song.name .. " #" .. ptrn.patternindex .. "\n";
+		self.text = self.text .. "               P2:" ..  string.format("%02X", ptrn.pulse2_start_index ) .. "\n";
+		self.text = self.text .. "               TR:" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n";
+		self.text = self.text .. "               P1:" ..  string.format("%02X", ptrn.pulse1_start_index ) .. "\n";
+		--self.text = self.text .. "               NO:" ..  string.format("%02X", ptrn.noise_start_index ) .. "\n";
+	end
+	function optimize:onRender()
+		
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		
+		local DATA_START = 0x79C8;
+		local DATA_END   = 0x7F0F;
+		
+		for i = DATA_START, DATA_END do
+			
+			local rectx = self.dispx + ( i % 16 ) * 16
+			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * 7)
+			
+			local sc = rom.data[i].song_claims;
+			local pc = rom.data[i].ptrn_claims;
+			
+			if ( #pc > 0 ) then
+				love.graphics.setColor(1,0,0);
+				for j = 1, #pc do
+					if (pc[j] == selectedPattern and sc[j] == selectedSong ) then
+						love.graphics.setColor(1,1,1);
+						break;
+					end
+				end
+			else
+				love.graphics.setColor(0,1,0);
+			end
+			love.graphics.rectangle("fill",rectx,recty,8,4);
+		end			
+	end
+	GROUP_OPTIMIZE.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_OPTIMIZE, text="Back"};
+	function GROUP_OPTIMIZE.BTN_BACK:onClick()
+		GROUP_EDIT:hide(); GROUP_OPTIMIZE:hide(); openGUIWindow( GROUP_TOPBAR );
+	end
 	
 	openGUIWindow(GROUP_TOPBAR);
 end
@@ -87,7 +138,6 @@ function clickGUI(x,y)
 end
 
 function updateGUI()
-
 	for i = 1, #elements do
 		local e = elements[i];
 		if (e.active) then

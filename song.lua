@@ -31,8 +31,12 @@ end
 
 -- begins traversal with the address to a pointer (starting at $791D and afterwards) and reads pointers sequentally
 -- pointerscount will always be 1 except for the overworld theme which takes like a ton of pointers
-function Song:parse( ptr_start_index, pointerscount )
+function Song:parse( ptr_start_index, pointerscount, hasnoise )
 	local MUSIC_STRT_INDEX = 0x791D;
+	self.hasNoise = hasnoise;
+	
+	-- todo parsing a song should... reset its claims on bytes?
+	-- (but what if multiple songs claim the same set of bytes? should all their claims be reset?)
 	
 	local duration = 0;	
 	for i = 0, pointerscount - 1 do
@@ -40,6 +44,8 @@ function Song:parse( ptr_start_index, pointerscount )
 		local p = Pattern:new();
 		p.starttime = duration;
 		p.songindex = self.songindex;
+		p.patternindex = i;
+		p.hasNoise = self.hasNoise;
 	
 		local ptr = rom:get( ptr_start_index + i ); --print( string.format( "%02X", ptr ));
 		local header_start_index = MUSIC_STRT_INDEX + ptr;
