@@ -13,6 +13,16 @@ function ROM:put(ind,value)
 	self.data[ind].val = value;
 end
 
+function ROM:export(path)
+	local output = ""
+	local file = io.open(path, "wb")
+	for i = 0, table.getn(self.data) do 
+		output = output .. string.char(self.data[i].val)
+	end
+	file:write(output)
+	file:close()
+end
+
 function ROM:import(path)
 	local file = io.open(path, "rb")
 	local content = file:read "*a" -- *a or *all reads the whole file

@@ -49,7 +49,7 @@ function initGUI()
 	local export = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_FILE, name="export", text="Export ROM"};
 	function export:onClick()
 		GROUP_FILE:hide(); openGUIWindow(GROUP_TOPBAR);
-		exportROM();
+		rom:export("smbmusedit-2/mario.nes");
 	end
 	-- for i = 1, #GROUP_FILE.children do
 		-- local e  = GROUP_FILE.children[i];
@@ -98,12 +98,13 @@ end
 
 function updatePatternGUI( song )
 	GROUP_PTRN_EDIT.ELM_PULSE2.children = {}
-	--GROUP_PTRN_EDIT.ELM_TRI.children    = {}
-	--GROUP_PTRN_EDIT.ELM_PULSE1.children = {}
+	GROUP_PTRN_EDIT.ELM_TRI.children    = {}
+	GROUP_PTRN_EDIT.ELM_PULSE1.children = {}
 	--GROUP_PTRN_EDIT.ELM_NOISE.children  = {}
 	
 	ElementPattern = GuiElement:new{
 		pattern = nil, -- numerical index
+		song    = nil, -- ditto
 		channel = nil, -- will be a key like "pulse1" etc.
 		height = 75,
 		bg_color = {1,1,1},
@@ -117,16 +118,14 @@ function updatePatternGUI( song )
 		selectedChannel = self.channel;
 	end
 	function ElementPattern:onUpdate()
-		local p = selectedSong;
-		local ptrn = sng_mariodies.patterns[ self.pattern ];
+		local ptrn = songs[self.song].patterns[self.pattern];
 		self.width = ptrn.duration * PATTERN_ZOOMX;
 		
 		self.bg_color = CHANNEL_COLORS[ self.channel ];
 	end
 	
 	function ElementPattern:onRender()
-		local p = selectedSong;
-		local ptrn = sng_mariodies.patterns[ self.pattern ];
+		local ptrn = songs[self.song].patterns[self.pattern];
 		local notes = ptrn:getNotes( self.channel );
 		
 		local hiindex = ptrn:getHighestNote( self.channel );
@@ -162,9 +161,9 @@ function updatePatternGUI( song )
 	for i = 0, song.patternCount - 1 do
 		local p = song.patterns[i];
 		
-		local p2 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE2, pattern = i, channel = "pulse2"};
-		local p1 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE1, pattern = i, channel = "pulse1"};
-		local tr = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_TRI,    pattern = i, channel = "tri"};
+		local p2 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE2, song = song.songindex, pattern = i, channel = "pulse2"};
+		local p1 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE1, song = song.songindex, pattern = i, channel = "pulse1"};
+		local tr = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_TRI,    song = song.songindex, pattern = i, channel = "tri"};
 	end
 end
 

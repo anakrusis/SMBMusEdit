@@ -19,6 +19,9 @@ Pattern = {
 	
 	-- more like a pointer into a set of eight note durations
 	tempo    = nil,
+	
+	-- refers back to the main song index
+	songindex = nil,
 }
 
 function Pattern:new(o)

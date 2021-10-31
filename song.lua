@@ -1,10 +1,10 @@
 -- I will be using the word "index" to refer to the position in the rom table used internally by this software
+-- (or other tables)
 -- and the word "pointer" to refer to absolute and relative positions as used by SMB's system
-
-local currentsong; -- song being parsed at the moment 
 
 Song = {
 	name = "Song",
+	songindex = 0,
 	
 	-- this value will be the length of the headerpointers and patterns tables
 	patternCount = 0, 
@@ -23,13 +23,15 @@ function Song:new(o)
 	self.__index = self
 	
 	o.patterns = {};
+	o.songindex = SONG_COUNT;
+	songs[SONG_COUNT] = o;
+	SONG_COUNT = SONG_COUNT + 1;
 	return o
 end
 
 -- begins traversal with the address to a pointer (starting at $791D and afterwards) and reads pointers sequentally
 -- pointerscount will always be 1 except for the overworld theme which takes like a ton of pointers
 function Song:parse( ptr_start_index, pointerscount )
-	currentsong = self;
 	local MUSIC_STRT_INDEX = 0x791D;
 	
 	local duration = 0;	
@@ -37,6 +39,7 @@ function Song:parse( ptr_start_index, pointerscount )
 	
 		local p = Pattern:new();
 		p.starttime = duration;
+		p.songindex = self.songindex;
 	
 		local ptr = rom:get( ptr_start_index + i ); --print( string.format( "%02X", ptr ));
 		local header_start_index = MUSIC_STRT_INDEX + ptr;

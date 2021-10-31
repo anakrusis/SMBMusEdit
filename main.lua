@@ -19,7 +19,7 @@ function love.load()
 	
 	selectedChannel = "tri";
 	selectedPattern = 0;
-	selectedSong    = 0;
+	selectedSong    = 1;
 	
 	love.window.setTitle("SMBMusEdit 0.1.0a")
 	success = love.window.setMode( 800, 600, {resizable=true, minwidth=800, minheight=600} )
@@ -32,16 +32,22 @@ function love.load()
 	initRhythmTables();
 	initGUI();
 	
+	SONG_COUNT = 0;
 	songs = {};
-	sng_mariodies = Song:new{ name = "Mario Dies" };
-	sng_mariodies:parse(0x792D, 33);
+	local s1 = Song:new{ name = "Starman" };
+	--s1:parse(0x792b, 1);
+	local s2 = Song:new{ name = "Overworld" };
+	s2:parse(0x792D, 33);
+	
+	for i = 0, #songs do
+		--print(songs[i].name .. " " .. songs[i].songindex);
+	end
 end
 
 function love.keypressed(key)
-
 	if key == "return" then
 		playing = not playing;
-		playpos = 0; songpos = sng_mariodies.patterns[selectedPattern].starttime;
+		playpos = 0; songpos = songs[selectedSong].patterns[selectedPattern].starttime;
 		playingPattern = selectedPattern;
 		if (not playing) then stop(); end
 	end
@@ -59,7 +65,7 @@ function love.mousepressed( x,y,button )
 		
 			local note = math.ceil(piano_roll_untray(y));
 			local tick = math.floor(piano_roll_untrax(x));
-			local ptrn = sng_mariodies.patterns[selectedPattern];
+			local ptrn = songs[selectedSong].patterns[selectedPattern];
 			local existingnote = ptrn:getNoteAtTick(tick, selectedChannel);
 			
 			-- clicking the right edge of the note: initates dragging for rhythm changing
@@ -94,31 +100,28 @@ function love.mousemoved( x, y, dx, dy, istouch )
 		elseif love.mouse.getY() > DIVIDER_POS then
 			if (DRAGGING_NOTE) then
 				local tick = math.floor(piano_roll_untrax(x));
-				sng_mariodies.patterns[selectedPattern]:changeRhythm( tick, DRAGGING_NOTE, selectedChannel )
+				songs[selectedSong].patterns[selectedPattern]:changeRhythm( tick, DRAGGING_NOTE, selectedChannel )
 			end
 		end
-		
-		-- if love.mouse.getY() > DIVIDER_POS then
-			-- if math.abs(dx) > 1 then
-				-- local tick = math.floor(piano_roll_untrax(x));
-				-- local increasing = (dx > 0);
-				-- sng_mariodies.patterns[selectedPattern]:changeRhythm(increasing,tick,selectedChannel);
-			-- end
-		-- end
 	end
 end
 
 function love.wheelmoved( x, y )
-	if love.keyboard.isDown( "lctrl" ) then
-		if love.mouse.getY() > DIVIDER_POS then
-			PIANOROLL_ZOOMX = PIANOROLL_ZOOMX + (y / 2);
-			PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
+	-- mouse wheel on the piano roll: scrolls vertically
+	if love.mouse.getY() > DIVIDER_POS then
+		if love.keyboard.isDown( "lctrl" ) then
+			if love.mouse.getY() > DIVIDER_POS then
+				PIANOROLL_ZOOMX = PIANOROLL_ZOOMX + (y / 2);
+				PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
+			else
+				PATTERN_ZOOMX = PATTERN_ZOOMX + (y / 2);
+				PATTERN_ZOOMX = math.max(0.5, PATTERN_ZOOMX);
+			end
 		else
-			PATTERN_ZOOMX = PATTERN_ZOOMX + (y / 2);
-			PATTERN_ZOOMX = math.max(0.5, PATTERN_ZOOMX);
+			PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - ((y * 50) / PIANOROLL_ZOOMY);
 		end
-	else
-		PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - ((y * 50) / PIANOROLL_ZOOMY);
+	else	
+		
 	end
 end
 
@@ -140,14 +143,14 @@ function love.update(dt)
 end
 
 function play()
-	local ptrn = sng_mariodies.patterns[playingPattern];
+	local ptrn = songs[selectedSong].patterns[playingPattern];
 	playChannel( ptrn.pulse2_notes, SRC_PULSE2 );
 	playChannel( ptrn.tri_notes,    SRC_TRI );
 	playChannel( ptrn.pulse1_notes, SRC_PULSE1 );
 	
 	if (playpos >= ptrn.duration) then 
-		if sng_mariodies.loop then
-			playingPattern = ( playingPattern + 1 ) % ( sng_mariodies.patternCount );
+		if songs[selectedSong].loop then
+			playingPattern = ( playingPattern + 1 ) % ( songs[selectedSong].patternCount );
 			playpos = -1;
 			songpos = songpos - 1;
 			
@@ -192,7 +195,7 @@ end
 
 function love.draw()
 	-- Piano roll rendering
-	local ptrn = sng_mariodies.patterns[ selectedPattern ];
+	local ptrn = songs[selectedSong].patterns[ selectedPattern ];
 	
 	-- background of the piano roll (red)
 	love.graphics.setColor( 0.12,0,0 );
@@ -287,7 +290,7 @@ function renderChannel( notes, color )
 		love.graphics.line(rectx,DIVIDER_POS,rectx,WINDOW_HEIGHT);
 	end
 	
-	local dur = sng_mariodies.patterns[selectedPattern].duration;
+	local dur = songs[selectedSong].patterns[selectedPattern].duration;
 	local endx = pianoroll_trax(dur);
 	love.graphics.line(endx,DIVIDER_POS,endx,WINDOW_HEIGHT);
 end
@@ -349,14 +352,4 @@ function initPitchTables()
 			PITCH_VALS[ noteval ] = i
 		end
 	end
-end
-
-function exportROM()
-	local output = ""
-	local file = io.open("smbmusedit-2/mario.nes", "wb")
-	for i = 0, table.getn(rom) do 
-		output = output .. string.char(rom[i])
-	end
-	file:write(output)
-	file:close()
 end
