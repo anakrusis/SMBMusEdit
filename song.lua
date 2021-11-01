@@ -5,11 +5,11 @@
 Song = {
 	name = "Song",
 	songindex = 0,
+	-- index to the first pointer in rom which will point to the first header of the first pattern
+	ptr_start_index = nil,
+	-- number of pointers, including the first one, to sequentially parse. (for all except overworld theme, will be 1)
+	patternCount = 1, 
 	
-	-- this value will be the length of the headerpointers and patterns tables
-	patternCount = 0, 
-	
-	headerPointers = {}, -- not sure what this will be for yet
 	patterns = {},
 	
 	-- i think only underground and castle don't have noise...
@@ -31,15 +31,14 @@ end
 
 -- begins traversal with the address to a pointer (starting at $791D and afterwards) and reads pointers sequentally
 -- pointerscount will always be 1 except for the overworld theme which takes like a ton of pointers
-function Song:parse( ptr_start_index, pointerscount, hasnoise )
+function Song:parse()
 	local MUSIC_STRT_INDEX = 0x791D;
-	self.hasNoise = hasnoise;
 	
 	-- todo parsing a song should... reset its claims on bytes?
 	-- (but what if multiple songs claim the same set of bytes? should all their claims be reset?)
 	
 	local duration = 0;	
-	for i = 0, pointerscount - 1 do
+	for i = 0, self.patternCount - 1 do
 	
 		local p = Pattern:new();
 		p.starttime = duration;
@@ -47,15 +46,12 @@ function Song:parse( ptr_start_index, pointerscount, hasnoise )
 		p.patternindex = i;
 		p.hasNoise = self.hasNoise;
 	
-		local ptr = rom:get( ptr_start_index + i ); --print( string.format( "%02X", ptr ));
+		local ptr = rom:get( self.ptr_start_index + i ); --print( string.format( "%02X", ptr ));
 		local header_start_index = MUSIC_STRT_INDEX + ptr;
 		duration = duration + p:parse( header_start_index );
 		
 		self.patterns[i] = p;
 	end
-	self.patternCount = pointerscount;
-	
-	updatePatternGUI( self );
 end
 
 function Song:getLowestNote(key)

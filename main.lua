@@ -34,14 +34,68 @@ function love.load()
 	
 	SONG_COUNT = 0;
 	songs = {};
-	local s1 = Song:new{ name = "Starman" };
-	s1:parse(0x792b, 1, true);
-	local s2 = Song:new{ name = "Underwater" };
-	s2:parse(0x7926, 1, true);
-	local s3 = Song:new{ name = "Overworld" };
-	s3:parse(0x792d, 33,true);
+	local s;
+	s = Song:new{ name = "Mario Dies", 
+	ptr_start_index = 0x791d, hasNoise = false, loop = false };
+	s = Song:new{ name = "Game Over",
+	ptr_start_index = 0x791e, hasNoise = false, loop = false };
+	s = Song:new{ name = "Princess Rescued",
+	ptr_start_index = 0x791f, hasNoise = false, loop = true };
+	s = Song:new{ name = "Toad Rescued",
+	ptr_start_index = 0x7920, hasNoise = false, loop = false };
+	s = Song:new{ name = "Game Over (Alt.)",
+	ptr_start_index = 0x7921, hasNoise = false, loop = false };	
+	s = Song:new{ name = "Level Complete",
+	ptr_start_index = 0x7922, hasNoise = false, loop = false };
+	s = Song:new{ name = "Hurry Up!",
+	ptr_start_index = 0x7923, hasNoise = false, loop = false };
+	s = Song:new{ name = "Silence",
+	ptr_start_index = 0x7924, hasNoise = false, loop = false };
+	s = Song:new{ name = "(Unknown)",
+	ptr_start_index = 0x7925, hasNoise = false, loop = false };
+	s = Song:new{ name = "Underwater",
+	ptr_start_index = 0x7926, hasNoise = true,  loop = true };	
+	s = Song:new{ name = "Underground",
+	ptr_start_index = 0x7927, hasNoise = false, loop = true };	
+	s = Song:new{ name = "Castle",
+	ptr_start_index = 0x7928, hasNoise = false, loop = true };	
+	s = Song:new{ name = "Coin Heaven",
+	ptr_start_index = 0x7929, hasNoise = true,  loop = true };	
+	s = Song:new{ name = "Pipe Cutscene",
+	ptr_start_index = 0x792a, hasNoise = true,  loop = false };	
+	s = Song:new{ name = "Starman",
+	ptr_start_index = 0x792b, hasNoise = true,  loop = true };
+	s = Song:new{ name = "Lives Screen",
+	ptr_start_index = 0x792c, hasNoise = false, loop = false };
+	s = Song:new{ name = "Overworld",
+	ptr_start_index = 0x792d, hasNoise = true,  loop = true, patternCount = 33 };
+	
+	-- s = Song:new{ name = "Starman" };
+	-- s:parse(0x792b, 1, true);
+
+	-- s = Song:new{ name = "Overworld" };
+	-- s:parse(0x792d, 33,true);
+	parseAllSongs();
 	
 	updatePatternGUI( songs[selectedSong] );
+end
+
+function parseAllSongs()
+
+	-- resets all claims within the range of the music data section
+	local DATA_START = 0x79C8;
+	local DATA_END   = 0x7F0F;
+	for i = DATA_START, DATA_END do
+		local byt = rom.data[i];
+		byt.song_claims = {};
+		byt.ptrn_claims = {};
+		byt.chnl_claims = {};
+	end
+
+	-- and then parses the songs all
+	for i = 0, SONG_COUNT - 1 do
+		local s = songs[i]; s:parse();
+	end
 end
 
 function love.keypressed(key)
@@ -68,6 +122,7 @@ function love.mousepressed( x,y,button )
 			local ptrn = songs[selectedSong].patterns[selectedPattern];
 			local existingnote = ptrn:getNoteAtTick(tick, selectedChannel);
 			
+			if (not existingnote) then return end
 			-- clicking the right edge of the note: initates dragging for rhythm changing
 			if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
 				DRAGGING_NOTE = existingnote;
@@ -78,6 +133,10 @@ function love.mousepressed( x,y,button )
 			end
 		end
 	end
+end
+
+function love.mousereleased( x,y,button )
+	DRAGGING_NOTE = nil;
 end
 
 function love.mousemoved( x, y, dx, dy, istouch )
@@ -275,6 +334,7 @@ function renderAvailableNotes( channel )
 end
 
 function renderChannel( notes, color )
+	if not notes[0] then return end
 	for i = 0, #notes do
 		love.graphics.setColor( color );
 		local note = notes[i];

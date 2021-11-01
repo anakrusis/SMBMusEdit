@@ -18,6 +18,27 @@ function initGUI()
 	function GROUP_TOPBAR:onUpdate()
 		self.width = WINDOW_WIDTH;
 	end
+	GROUP_TOPBAR2 = GuiElement:new{x=0, y=60, width=500, height=3, name="topbar2", autopos = "left", autosizey = true};
+	function GROUP_TOPBAR2:onUpdate()
+		self.width = WINDOW_WIDTH;
+	end
+	local prevsong = GuiElement:new{x=0,y=0,width=50,height=50,parent=GROUP_TOPBAR2, name="prevsong", text="<"};
+	function prevsong:onClick()
+		selectedSong = (selectedSong - 1) % SONG_COUNT;
+		local sng = songs[selectedSong];
+		parseAllSongs();
+		updatePatternGUI( sng );
+		
+		-- todo make function loadSong, must set selectedPattern and selectedChannel to valid values
+		
+	end
+	local nextsong = GuiElement:new{x=0,y=0,width=50,height=50,parent=GROUP_TOPBAR2, name="nextsong", text=">"};
+	function nextsong:onClick()
+		selectedSong = (selectedSong + 1) % SONG_COUNT;
+		local sng = songs[selectedSong];
+		parseAllSongs();
+		updatePatternGUI( sng );
+	end
 	
 	local file = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="file", text="File"};
 	function file:onClick()
@@ -28,7 +49,7 @@ function initGUI()
 		openGUIWindow( GROUP_EDIT );
 	end
 	
-	GROUP_PTRN_EDIT = GuiElement:new{x=-50, y=60, width=500, height=60, name="ptrneditor", autopos = "top", autosizey = true, padding = 0};
+	GROUP_PTRN_EDIT = GuiElement:new{x=-50, y=120, width=500, height=60, name="ptrneditor", autopos = "top", autosizey = true, padding = 0};
 	function GROUP_PTRN_EDIT:onUpdate()
 		self.width = 2000;
 		self.x = ((0 - PATTERN_SCROLL) * PATTERN_ZOOMX)
@@ -122,6 +143,7 @@ function openGUIWindow( element )
 	-- Special case where these elements are inseperable, TODO maybe put these into a bigger super-group
 	if (element == GROUP_TOPBAR) then
 		GROUP_PTRN_EDIT.active = true;  GROUP_PTRN_EDIT:show();
+		GROUP_TOPBAR2.active = true;  GROUP_TOPBAR2:show();
 	end
 	
 	element.active = true;

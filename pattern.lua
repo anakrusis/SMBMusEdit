@@ -16,6 +16,7 @@ Pattern = {
 	-- based on the sum of all note lengths of pulse2, the lead channel. 
 	-- the unit of measure is game ticks 
 	duration = 0,
+	noiseduration = 0,
 	
 	-- more like a pointer into a set of eight note durations
 	tempo    = nil,
@@ -62,14 +63,14 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 	newdur = RHYTHM_TABLE[ind];
 	if not newdur then return; end 
 	
-	print("you tried: " .. relativedur .. " new dur: " .. newdur )
+	--print("you tried: " .. relativedur .. " new dur: " .. newdur )
 	
 	local previous = rom:get(existingnote.rom_index - 1);
 	if (previous >= 0x80 and previous <= 0x87) then
 		rom:put(existingnote.rom_index - 1, 0x80 + ind - self.tempo);
 	end
 	
-	self:parse(self.header_start_index);
+	parseAllSongs();
 end
 
 function Pattern:writePitch(midinote, existingnote, channel)
@@ -102,12 +103,13 @@ function Pattern:writePitch(midinote, existingnote, channel)
 	
 	rom:put(ind, newval);
 	--existingnote.pitch = 80;
-	self:parse(self.header_start_index);
+	parseAllSongs();
 end
 
 function Pattern:getNoteAtTick(tick, channel)
 	local notes = self:getNotes(channel);
 	local existingnote;
+	if not notes[0] then return end
 	for i = 0, #notes do
 		local note = notes[i];
 		if ( note.starttime + note.duration > tick ) then
@@ -138,10 +140,11 @@ function Pattern:getLowestNote(key)
 	local lowestpitch = 10000; local lowestpitchindex = -1;
 	for i = 0, #notes do
 		local note = notes[i];
-
-		if (note.pitch < lowestpitch and note.val ~= 04) then
-			lowestpitch = note.pitch;
-			lowestpitchindex = i;
+		if (note) then
+			if (note.pitch < lowestpitch and note.val ~= 04) then
+				lowestpitch = note.pitch;
+				lowestpitchindex = i;
+			end
 		end
 	end
 	return lowestpitchindex;
@@ -154,17 +157,18 @@ function Pattern:getHighestNote(key)
 	local highestpitch = -10000; local hipitchindex = -1;
 	for i = 0, #notes do
 		local note = notes[i];
-
-		if (note.pitch > highestpitch and note.val ~= 04) then
-			highestpitch = note.pitch;
-			hipitchindex = i;
+		if (note) then
+			if (note.pitch > highestpitch and note.val ~= 04) then
+				highestpitch = note.pitch;
+				hipitchindex = i;
+			end
 		end
 	end
 	return hipitchindex;
 end
 
 -- This is the pulse 2 and triangle style note parsing
--- (pulse 1 and noise parsing are done in their own respective functions)
+-- (Rhythms and note pitches are in seperate bytes)
 function Pattern:parseNotes(start_index, target_table)
 	local duration = 0;
 	local current_rhythm_val = nil;
@@ -196,7 +200,6 @@ function Pattern:parseNotes(start_index, target_table)
 			current_rhythm_val = val;
 			local rhythm_ind = ( val - 0x80 ) + self.tempo;
 			current_note_length = RHYTHM_TABLE[ rhythm_ind ];
-			--print(current_note_length);
 			
 		-- Notes proper
 		else
@@ -219,7 +222,9 @@ function Pattern:parseNotes(start_index, target_table)
 	return duration;
 end
 
-function Pattern:parsePulse1Notes( start_index, target_table )
+-- This is the pulse 1 and noise style parsing
+-- (Rhythms and note pitches are both contained in each byte)
+function Pattern:parseCompressedNotes( start_index, target_table )
 	local duration = 0;
 	local current_rhythm_val = nil;
 	local current_note_length = nil;
@@ -231,6 +236,10 @@ function Pattern:parsePulse1Notes( start_index, target_table )
 		
 		if self.duration > 0 and duration >= self.duration then
 			return;
+		end
+		
+		if (target_table == self.pulse1_notes and val == 0x00) then
+			return duration;
 		end
 		
 		local b = rom.data[ind]; -- byte object
@@ -271,6 +280,8 @@ end
 function Pattern:parse( hdr_strt_ind )
 
 	self.duration = 0;
+	self.noiseduration = 0; -- noise pattern usually has a different length
+	
 	self.pulse2_notes = {};
 	self.tri_notes    = {};
 	self.pulse1_notes = {};
@@ -295,10 +306,10 @@ function Pattern:parse( hdr_strt_ind )
 	-- Duration of pattern is decided by the length of the pulse 2 channel
 	self.duration = self:parseNotes(self.pulse2_start_index, self.pulse2_notes);
 	self:parseNotes(self.tri_start_index, self.tri_notes);
-	self:parsePulse1Notes(self.pulse1_start_index, self.pulse1_notes);
+	self:parseCompressedNotes(self.pulse1_start_index, self.pulse1_notes);
 	
 	if (self.hasNoise) then
-		self:parsePulse1Notes(self.noise_start_index, self.noise_notes);
+		self.noiseduration = self:parseCompressedNotes(self.noise_start_index, self.noise_notes);
 	end
 	
 	--print("Lowest note: " .. self:getLowestNote("pulse2"));
