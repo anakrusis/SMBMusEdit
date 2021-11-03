@@ -227,6 +227,7 @@ function play()
 end
 
 function playChannel( notes, source )
+	if not notes[0] then return end
 	for i = 0, #notes do
 		local note = notes[i];
 		if note.starttime == playpos then

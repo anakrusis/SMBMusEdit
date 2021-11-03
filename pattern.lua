@@ -238,41 +238,45 @@ function Pattern:parseCompressedNotes( start_index, target_table )
 			return;
 		end
 		
-		if (target_table == self.pulse1_notes and val == 0x00) then
-			return duration;
+		-- 00 is special case value. in the noise channel it acts as a premature terminator..
+		-- in the pulse 1 channel it seems to trigger the hardware sweeps on the death music?
+		if (val == 0x00) then
+			if target_table == self.noise_notes then
+				return duration;
+			end
+		else
+			local b = rom.data[ind]; -- byte object
+			table.insert(b.song_claims, self.songindex);
+			table.insert(b.ptrn_claims, self.patternindex);
+			
+			--print( "Val: " .. string.format( "%02X", val ));
+			
+			-- Rhythm data for pulse 1 is obtained with a bitmask like this: 1100 0001
+			local less_sig_bits = bitwise.band( val, 0xc0 );
+			local more_sig_bit  = val % 2;
+			current_rhythm_val  = 0x80 + ( more_sig_bit * 4 ) + ( less_sig_bits / 0x40 );
+			
+			--print( "Rhythm: " .. string.format( "%02X", current_rhythm_val ));
+			
+			local rhythm_ind = ( current_rhythm_val - 0x80 ) + self.tempo;
+			current_note_length = RHYTHM_TABLE[ rhythm_ind ];
+			
+			--print( "Length: " .. string.format( "%02X", current_note_length ));
+			
+			local n = Note:new{ rom_index = ind }
+			n.duration = current_note_length;
+			n.starttime = duration;
+			
+			-- Bitmask of 0011 1110 provides the pitch data for pulse 1
+			local pval = bitwise.band( val, 0x3e );
+			n.val = pval;
+			n.pitch = NOTES[pval];
+			--print( "Pitch: " .. string.format( "%02X", pval ));
+			
+			target_table[ notecount ] = n;
+			duration = duration + n.duration;
+			notecount = notecount + 1;
 		end
-		
-		local b = rom.data[ind]; -- byte object
-		table.insert(b.song_claims, self.songindex);
-		table.insert(b.ptrn_claims, self.patternindex);
-		
-		--print( "Val: " .. string.format( "%02X", val ));
-		
-		-- Rhythm data for pulse 1 is obtained with a bitmask like this: 1100 0001
-		local less_sig_bits = bitwise.band( val, 0xc0 );
-		local more_sig_bit  = val % 2;
-		current_rhythm_val  = 0x80 + ( more_sig_bit * 4 ) + ( less_sig_bits / 0x40 );
-		
-		--print( "Rhythm: " .. string.format( "%02X", current_rhythm_val ));
-		
-		local rhythm_ind = ( current_rhythm_val - 0x80 ) + self.tempo;
-		current_note_length = RHYTHM_TABLE[ rhythm_ind ];
-		
-		--print( "Length: " .. string.format( "%02X", current_note_length ));
-		
-		local n = Note:new{ rom_index = ind }
-		n.duration = current_note_length;
-		n.starttime = duration;
-		
-		-- Bitmask of 0011 1110 provides the pitch data for pulse 1
-		local pval = bitwise.band( val, 0x3e );
-		n.val = pval;
-		n.pitch = NOTES[pval];
-		--print( "Pitch: " .. string.format( "%02X", pval ));
-		
-		target_table[ notecount ] = n;
-		duration = duration + n.duration;
-		notecount = notecount + 1;
 	end
 end
 
