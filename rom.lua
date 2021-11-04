@@ -65,3 +65,12 @@ function Byte:new(o)
 	o.chnl_claims = {};
 	return o
 end
+
+function Byte:hasClaim(song,ptrn,chnl)
+	for i = 1, #self.song_claims do
+		if self.song_claims[i] == song and self.ptrn_claims[i] == ptrn and self.chnl_claims[i] == chnl then
+			return true;
+		end
+	end
+	return false;
+end

@@ -12,6 +12,18 @@ Pattern = {
 	pulse1_notes = {},
 	noise_notes  = {},
 	
+	-- count of how many bytes are claimed by each channel of this pattern. will never exceed bytes_avail
+	pulse2_bytes_used = 0,
+	tri_bytes_used    = 0,
+	pulse1_bytes_used = 0,
+	noise_bytes_used  = 0,
+	
+	-- count of how many bytes in total between the start of the channels data and the next, the available room for data
+	pulse2_bytes_avail = 0,
+	tri_bytes_avail    = 0,
+	pulse1_bytes_avail = 0,
+	noise_bytes_avail  = 0,
+	
 	starttime = 0,
 	-- based on the sum of all note lengths of pulse2, the lead channel. 
 	-- the unit of measure is game ticks 
@@ -120,16 +132,17 @@ function Pattern:getNoteAtTick(tick, channel)
 	return existingnote;
 end
 
--- just a simple map. valid keys: "pulse1", "pulse2", "tri", "noise"
-function Pattern:getNotes(key)
-	if key == "pulse1" then
-		return self.pulse1_notes
-	elseif key == "pulse2" then
-		return self.pulse2_notes
-	elseif key == "tri" then
-		return self.tri_notes
-	elseif key == "noise" then
-		return self.noise_notes
+function Pattern:countBytes( chnl )
+	self:setBytesUsed( chnl, 0 );
+	local start = self:getStartIndex( chnl )
+	for i = start, start + 0xff do 
+	
+		local byt = rom.data[i];
+		if byt:hasClaim(self.songindex,self.patternindex, chnl ) then
+			
+			local cbu = self:getBytesUsed( chnl );
+			self:setBytesUsed( chnl, cbu + 1 );
+		end
 	end
 end
 
@@ -189,6 +202,11 @@ function Pattern:parseNotes(start_index, target_table)
 		local b = rom.data[ind]; -- byte object
 		table.insert(b.song_claims, self.songindex);
 		table.insert(b.ptrn_claims, self.patternindex);
+		if target_table == self.tri_notes then
+			table.insert(b.chnl_claims, "tri");
+		else
+			table.insert(b.chnl_claims, "pulse2");
+		end
 		
 		-- Pattern terminator
 		if val == 0x00 then
@@ -238,6 +256,16 @@ function Pattern:parseCompressedNotes( start_index, target_table )
 			return;
 		end
 		
+		-- Registering the byte for counting purposes
+		local b = rom.data[ind];
+		table.insert(b.song_claims, self.songindex);
+		table.insert(b.ptrn_claims, self.patternindex);
+		if target_table == self.noise_notes then
+			table.insert(b.chnl_claims, "noise");
+		else
+			table.insert(b.chnl_claims, "pulse1");
+		end
+		
 		-- 00 is special case value. in the noise channel it acts as a premature terminator..
 		-- in the pulse 1 channel it seems to trigger the hardware sweeps on the death music?
 		if (val == 0x00) then
@@ -245,10 +273,6 @@ function Pattern:parseCompressedNotes( start_index, target_table )
 				return duration;
 			end
 		else
-			local b = rom.data[ind]; -- byte object
-			table.insert(b.song_claims, self.songindex);
-			table.insert(b.ptrn_claims, self.patternindex);
-			
 			--print( "Val: " .. string.format( "%02X", val ));
 			
 			-- Rhythm data for pulse 1 is obtained with a bitmask like this: 1100 0001
@@ -316,6 +340,67 @@ function Pattern:parse( hdr_strt_ind )
 		self.noiseduration = self:parseCompressedNotes(self.noise_start_index, self.noise_notes);
 	end
 	
-	--print("Lowest note: " .. self:getLowestNote("pulse2"));
 	return self.duration;
+end
+
+-- just a simple map. valid keys: "pulse1", "pulse2", "tri", "noise"
+function Pattern:getNotes(key)
+	if key == "pulse1" then
+		return self.pulse1_notes
+	elseif key == "pulse2" then
+		return self.pulse2_notes
+	elseif key == "tri" then
+		return self.tri_notes
+	elseif key == "noise" then
+		return self.noise_notes
+	end
+end
+
+-- likewise for the following functions
+function Pattern:getStartIndex(key)
+	if key == "pulse1" then
+		return self.pulse1_start_index
+	elseif key == "pulse2" then
+		return self.pulse2_start_index
+	elseif key == "tri" then
+		return self.tri_start_index
+	elseif key == "noise" then
+		return self.noise_start_index
+	end
+end
+
+function Pattern:getBytesAvailable(key)
+	if key == "pulse1" then
+		return self.pulse1_bytes_avail
+	elseif key == "pulse2" then
+		return self.pulse2_bytes_avail
+	elseif key == "tri" then
+		return self.tri_bytes_avail
+	elseif key == "noise" then
+		return self.noise_bytes_avail
+	end
+end
+
+function Pattern:getBytesUsed(key)
+	if key == "pulse1" then
+		return self.pulse1_bytes_used
+	elseif key == "pulse2" then
+		return self.pulse2_bytes_used
+	elseif key == "tri" then
+		return self.tri_bytes_used
+	elseif key == "noise" then
+		return self.noise_bytes_used
+	end
+end
+
+function Pattern:setBytesUsed(key, value)
+	if key == "pulse1" then
+		self.pulse1_bytes_used = value;
+	elseif key == "pulse2" then
+		self.pulse2_bytes_used = value;
+	elseif key == "tri" then
+		self.tri_bytes_used    = value;
+	elseif key == "noise" then
+		self.noise_bytes_used  = value;
+	end
 end

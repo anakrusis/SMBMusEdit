@@ -52,6 +52,18 @@ function Song:parse()
 		
 		self.patterns[i] = p;
 	end
+	
+	-- after parsing is done we count the used bytes
+	for i = 0, self.patternCount - 1 do
+		local p = self.patterns[i];
+		
+		p:countBytes("pulse2");
+		p:countBytes("tri");
+		p:countBytes("pulse1");
+		if (p.hasNoise) then
+			p:countBytes("noise");
+		end
+	end
 end
 
 function Song:getLowestNote(key)

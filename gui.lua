@@ -13,6 +13,7 @@ function initGUI()
 	CHANNEL_COLORS["pulse2"] = { 1,   0, 1 }
 	CHANNEL_COLORS["pulse1"] = { 0.5, 0, 0.5 }
 	CHANNEL_COLORS["tri"]    = { 0,   0, 1 }
+	CHANNEL_COLORS["noise"]  = { 1,   1, 1 }
 	
 	GROUP_TOPBAR = GuiElement:new{x=0, y=0, width=500, height=3, name="topbar", autopos = "left", autosizey = true};
 	function GROUP_TOPBAR:onUpdate()
@@ -105,21 +106,42 @@ function initGUI()
 			
 			local rectx = self.dispx + ( i % 16 ) * 16
 			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * 7)
+			local b = rom.data[i] -- byte
+			if (b:hasClaim(selectedSong,selectedPattern,"pulse2")) then
+				love.graphics.setColor(CHANNEL_COLORS["pulse2"]);
 			
-			local sc = rom.data[i].song_claims;
-			local pc = rom.data[i].ptrn_claims;
+			elseif (b:hasClaim(selectedSong,selectedPattern,"tri")) then
+				love.graphics.setColor(CHANNEL_COLORS["tri"]);
 			
-			if ( #pc > 0 ) then
+			elseif (b:hasClaim(selectedSong,selectedPattern,"pulse1")) then
+				love.graphics.setColor(CHANNEL_COLORS["pulse1"]);
+			
+			elseif (b:hasClaim(selectedSong,selectedPattern,"noise")) then
+				love.graphics.setColor(CHANNEL_COLORS["noise"]);
+			
+			-- used byte
+			elseif (#b.song_claims > 0) then
 				love.graphics.setColor(1,0,0);
-				for j = 1, #pc do
-					if (pc[j] == selectedPattern and sc[j] == selectedSong ) then
-						love.graphics.setColor(1,1,1);
-						break;
-					end
-				end
+				
+			-- unused byte
 			else
 				love.graphics.setColor(0,1,0);
 			end
+			
+			-- local sc = rom.data[i].song_claims;
+			-- local pc = rom.data[i].ptrn_claims;
+			
+			-- if ( #pc > 0 ) then
+				-- love.graphics.setColor(1,0,0);
+				-- for j = 1, #pc do
+					-- if (pc[j] == selectedPattern and sc[j] == selectedSong ) then
+						-- love.graphics.setColor(1,1,1);
+						-- break;
+					-- end
+				-- end
+			-- else
+				-- love.graphics.setColor(0,1,0);
+			-- end
 			love.graphics.rectangle("fill",rectx,recty,8,4);
 		end			
 	end

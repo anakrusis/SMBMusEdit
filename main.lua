@@ -285,10 +285,13 @@ function love.draw()
 	-- All the buttons and menus and stuff
 	renderGUI();
 	
+	love.graphics.setColor( 1,1,1 );
+	love.graphics.print( ptrn:getBytesUsed(selectedChannel), WINDOW_WIDTH - 100, DIVIDER_POS + 8 )
+	
 	-- pattern editor play line
 	love.graphics.setColor( 1,0,0 );
 	local linex = ((songpos - PATTERN_SCROLL) * PATTERN_ZOOMX) --+ WINDOW_WIDTH / 2;
-	love.graphics.line(linex,0,linex,DIVIDER_POS);
+	love.graphics.line(linex,60,linex,DIVIDER_POS);
 end
 
 function pianoroll_trax(x)
