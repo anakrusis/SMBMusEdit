@@ -25,20 +25,13 @@ function initGUI()
 	end
 	local prevsong = GuiElement:new{x=0,y=0,width=50,height=50,parent=GROUP_TOPBAR2, name="prevsong", text="<"};
 	function prevsong:onClick()
-		selectedSong = (selectedSong - 1) % SONG_COUNT;
-		local sng = songs[selectedSong];
-		parseAllSongs();
-		updatePatternGUI( sng );
-		
+		selectSong((selectedSong - 1) % SONG_COUNT);
 		-- todo make function loadSong, must set selectedPattern and selectedChannel to valid values
 		
 	end
 	local nextsong = GuiElement:new{x=0,y=0,width=50,height=50,parent=GROUP_TOPBAR2, name="nextsong", text=">"};
 	function nextsong:onClick()
-		selectedSong = (selectedSong + 1) % SONG_COUNT;
-		local sng = songs[selectedSong];
-		parseAllSongs();
-		updatePatternGUI( sng );
+		selectSong((selectedSong + 1) % SONG_COUNT);
 	end
 	
 	local file = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="file", text="File"};
@@ -127,21 +120,6 @@ function initGUI()
 			else
 				love.graphics.setColor(0,1,0);
 			end
-			
-			-- local sc = rom.data[i].song_claims;
-			-- local pc = rom.data[i].ptrn_claims;
-			
-			-- if ( #pc > 0 ) then
-				-- love.graphics.setColor(1,0,0);
-				-- for j = 1, #pc do
-					-- if (pc[j] == selectedPattern and sc[j] == selectedSong ) then
-						-- love.graphics.setColor(1,1,1);
-						-- break;
-					-- end
-				-- end
-			-- else
-				-- love.graphics.setColor(0,1,0);
-			-- end
 			love.graphics.rectangle("fill",rectx,recty,8,4);
 		end			
 	end
@@ -200,7 +178,7 @@ function updatePatternGUI( song )
 		pattern = nil, -- numerical index
 		song    = nil, -- ditto
 		channel = nil, -- will be a key like "pulse1" etc.
-		height = 75,
+		height = 50,
 		bg_color = {1,1,1},
 		text_color = {0,0,0},
 		padding = 0,

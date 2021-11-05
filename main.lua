@@ -2,6 +2,7 @@ require "song"
 require "pattern"
 require "rom"
 require "bitwise"
+require "render"
 require "guielement"
 require "gui"
 
@@ -19,7 +20,7 @@ function love.load()
 	
 	selectedChannel = "tri";
 	selectedPattern = 0;
-	selectedSong    = 1;
+	selectedSong    = 0;
 	
 	love.window.setTitle("SMBMusEdit 0.1.0a")
 	success = love.window.setMode( 800, 600, {resizable=true, minwidth=800, minheight=600} )
@@ -56,7 +57,7 @@ function love.load()
 	s = Song:new{ name = "Underwater",
 	ptr_start_index = 0x7926, hasNoise = true,  loop = true };	
 	s = Song:new{ name = "Underground",
-	ptr_start_index = 0x7927, hasNoise = false, loop = true };	
+	ptr_start_index = 0x7927, hasNoise = false, loop = true, hasPulse1 = false };	
 	s = Song:new{ name = "Castle",
 	ptr_start_index = 0x7928, hasNoise = false, loop = true };	
 	s = Song:new{ name = "Coin Heaven",
@@ -70,14 +71,9 @@ function love.load()
 	s = Song:new{ name = "Overworld",
 	ptr_start_index = 0x792d, hasNoise = true,  loop = true, patternCount = 33 };
 	
-	-- s = Song:new{ name = "Starman" };
-	-- s:parse(0x792b, 1, true);
-
-	-- s = Song:new{ name = "Overworld" };
-	-- s:parse(0x792d, 33,true);
 	parseAllSongs();
 	
-	updatePatternGUI( songs[selectedSong] );
+	selectSong(1);
 end
 
 function parseAllSongs()
@@ -201,6 +197,13 @@ function love.update(dt)
 	updateGUI();
 end
 
+function selectSong(index)
+	stop(); playpos = 0; songpos = 0; selectedSong = index;
+	selectedPattern = 0; selectedChannel = "pulse2";
+	parseAllSongs();
+	updatePatternGUI( songs[index] );
+end
+
 function play()
 	local ptrn = songs[selectedSong].patterns[playingPattern];
 	playChannel( ptrn.pulse2_notes, SRC_PULSE2 );
@@ -292,85 +295,6 @@ function love.draw()
 	love.graphics.setColor( 1,0,0 );
 	local linex = ((songpos - PATTERN_SCROLL) * PATTERN_ZOOMX) --+ WINDOW_WIDTH / 2;
 	love.graphics.line(linex,60,linex,DIVIDER_POS);
-end
-
-function pianoroll_trax(x)
-	return PIANOROLL_ZOOMX * (x - PIANOROLL_SCROLLX) + (WINDOW_WIDTH / 2) + SIDE_PIANO_WIDTH; 
-end
-function pianoroll_tray(y)
-	return PIANOROLL_ZOOMY * (60 - y - PIANOROLL_SCROLLY ) + DIVIDER_POS + ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 );
-end
-function piano_roll_untrax(x)
-	return ((x - SIDE_PIANO_WIDTH - (WINDOW_WIDTH / 2) ) / PIANOROLL_ZOOMX) + PIANOROLL_SCROLLX;
-end
-function piano_roll_untray(y)
-	return -((( y - DIVIDER_POS - ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 ) ) / PIANOROLL_ZOOMY ) + PIANOROLL_SCROLLY) + 60
-end
-
-function renderAvailableNotes( channel ) 
-	for i = 0, #NOTES do
-		local ind = i;
-		if ( channel == "pulse1" ) then
-			ind = bitwise.band( ind, 0x3e ) -- 0011 1110
-		end
-		
-		if NOTES[ind] ~= nil then
-			local pitch = NOTES[ind];
-			if ( channel == "tri" ) then
-				pitch = pitch - 12;
-			end
-			
-			local recty = pianoroll_tray( pitch );
-			local m = (pitch) % 12;
-			if ( m == 1 or m == 3 or m == 6 or m == 8 or m == 10 ) then
-				love.graphics.setColor( 0.00,0.00,0.00 );
-			else 
-				love.graphics.setColor( 0.06,0.06,0.06 );
-			end
-			love.graphics.rectangle( "fill", 0, recty, WINDOW_WIDTH, PIANOROLL_ZOOMY )
-			
-			--love.graphics.setLineWidth(3);
-			love.graphics.setColor( 0.00,0.00,0.00,1 );
-			love.graphics.line(0,recty+1,WINDOW_WIDTH,recty+1);
-			--love.graphics.setLineWidth(1);
-		end
-	end
-end
-
-function renderChannel( notes, color )
-	if not notes[0] then return end
-	for i = 0, #notes do
-		love.graphics.setColor( color );
-		local note = notes[i];
-		local rectx = pianoroll_trax( note.starttime );
-		local recty = pianoroll_tray( note.pitch );
-		local rectwidth = note.duration * PIANOROLL_ZOOMX;
-		
-		if ( note.val ~= 04) then
-			love.graphics.rectangle( "fill", rectx, recty, rectwidth, PIANOROLL_ZOOMY )
-		end
-		
-		love.graphics.setColor( 0.5,0.5,0.5 );
-		love.graphics.line(rectx,DIVIDER_POS,rectx,WINDOW_HEIGHT);
-	end
-	
-	local dur = songs[selectedSong].patterns[selectedPattern].duration;
-	local endx = pianoroll_trax(dur);
-	love.graphics.line(endx,DIVIDER_POS,endx,WINDOW_HEIGHT);
-end
-
-function renderSidePiano()
-	for i = 31, 103 do
-		local keyy = pianoroll_tray( i );
-		
-		local m = (i) % 12;
-		if ( m == 1 or m == 3 or m == 6 or m == 8 or m == 10 ) then
-			love.graphics.setColor( 0.25,0.25,0.25 );
-		else
-			love.graphics.setColor( 1,1,1 );
-		end
-		love.graphics.rectangle( "fill", 0, keyy, SIDE_PIANO_WIDTH, PIANOROLL_ZOOMY )
-	end
 end
 
 function initRhythmTables()

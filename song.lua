@@ -12,9 +12,11 @@ Song = {
 	
 	patterns = {},
 	
-	-- i think only underground and castle don't have noise...
-	hasNoise = true,
-	loop     = true, -- some songs will be best looped and others not
+	-- underground, castle, and all the event music have no noise
+	hasNoise  = true,
+	-- I think only underground has no pulse1
+	hasPulse1 = true,
+	loop      = true, -- some songs will be best looped and others not
 }
 
 function Song:new(o)
@@ -44,7 +46,8 @@ function Song:parse()
 		p.starttime = duration;
 		p.songindex = self.songindex;
 		p.patternindex = i;
-		p.hasNoise = self.hasNoise;
+		p.hasNoise  = self.hasNoise;
+		p.hasPulse1 = self.hasPulse1;
 	
 		local ptr = rom:get( self.ptr_start_index + i ); --print( string.format( "%02X", ptr ));
 		local header_start_index = MUSIC_STRT_INDEX + ptr;
@@ -59,7 +62,9 @@ function Song:parse()
 		
 		p:countBytes("pulse2");
 		p:countBytes("tri");
-		p:countBytes("pulse1");
+		if (p.hasPulse1) then
+			p:countBytes("pulse1");
+		end
 		if (p.hasNoise) then
 			p:countBytes("noise");
 		end

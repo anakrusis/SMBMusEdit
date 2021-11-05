@@ -38,6 +38,7 @@ Pattern = {
 	patternindex = nil,
 	
 	hasNoise = true,
+	hasPulse1 = true,
 }
 
 function Pattern:new(o)
@@ -334,8 +335,10 @@ function Pattern:parse( hdr_strt_ind )
 	-- Duration of pattern is decided by the length of the pulse 2 channel
 	self.duration = self:parseNotes(self.pulse2_start_index, self.pulse2_notes);
 	self:parseNotes(self.tri_start_index, self.tri_notes);
-	self:parseCompressedNotes(self.pulse1_start_index, self.pulse1_notes);
 	
+	if (self.hasPulse1) then
+		self:parseCompressedNotes(self.pulse1_start_index, self.pulse1_notes);
+	end
 	if (self.hasNoise) then
 		self.noiseduration = self:parseCompressedNotes(self.noise_start_index, self.noise_notes);
 	end
