@@ -197,6 +197,10 @@ function love.update(dt)
 	updateGUI();
 end
 
+function errorText(text)
+
+end
+
 function selectSong(index)
 	stop(); playpos = 0; songpos = 0; selectedSong = index;
 	selectedPattern = 0; selectedChannel = "pulse2";
@@ -289,7 +293,8 @@ function love.draw()
 	renderGUI();
 	
 	love.graphics.setColor( 1,1,1 );
-	love.graphics.print( ptrn:getBytesUsed(selectedChannel), WINDOW_WIDTH - 100, DIVIDER_POS + 8 )
+	local bytes_str = ptrn:getBytesUsed(selectedChannel) .. "/" .. ptrn:getBytesAvailable(selectedChannel);
+	love.graphics.print( bytes_str, WINDOW_WIDTH - 100, DIVIDER_POS + 8 )
 	
 	-- pattern editor play line
 	love.graphics.setColor( 1,0,0 );

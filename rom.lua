@@ -8,9 +8,28 @@ function ROM:get(ind)
 	return self.data[ind].val;
 end
 
+-- bytes
 function ROM:put(ind,value)
 	-- todo maybe return an error or something if inputted value exceeds 0xff
 	self.data[ind].val = value;
+end
+
+-- words (little endian)
+function ROM:putWord(ind,value)
+	self.data[ind].val     = value % 0x100;
+	self.data[ind + 1].val = math.floor(value / 0x100);
+end
+
+function ROM:findNextUnusedIndex()
+	local DATA_START = 0x79C8;
+	local DATA_END   = 0x7F0F;
+	
+	for i = DATA_START, DATA_END do
+		if #self.data[i].song_claims == 0 then
+			return i;
+		end
+	end
+	return false;
 end
 
 function ROM:export(path)

@@ -13,7 +13,7 @@ function initGUI()
 	CHANNEL_COLORS["pulse2"] = { 1,   0, 1 }
 	CHANNEL_COLORS["pulse1"] = { 0.5, 0, 0.5 }
 	CHANNEL_COLORS["tri"]    = { 0,   0, 1 }
-	CHANNEL_COLORS["noise"]  = { 1,   1, 1 }
+	CHANNEL_COLORS["noise"]  = { 0, 0.5, 0.5 }
 	
 	GROUP_TOPBAR = GuiElement:new{x=0, y=0, width=500, height=3, name="topbar", autopos = "left", autosizey = true};
 	function GROUP_TOPBAR:onUpdate()
@@ -70,7 +70,7 @@ function initGUI()
 		rom:export("smbmusedit-2/mario.nes");
 	end
 	
-	GROUP_EDIT = GuiElement:new{x=55, y=55, width=500, height=3, name="edit_container", autopos = "left", autosize = true}; GROUP_EDIT:hide();
+	GROUP_EDIT = GuiElement:new{x=97, y=55, width=500, height=3, name="edit_container", autopos = "left", autosize = true}; GROUP_EDIT:hide();
 	local optimize = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_EDIT, name="optimize", text="Optimize..."};
 	function optimize:onClick()
 		openGUIWindow( GROUP_OPTIMIZE );
@@ -81,11 +81,31 @@ function initGUI()
 	function optimize:onUpdate()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
-		self.text = "               " ..  song.name .. " #" .. ptrn.patternindex .. "\n";
-		self.text = self.text .. "               P2:" ..  string.format("%02X", ptrn.pulse2_start_index ) .. "\n";
-		self.text = self.text .. "               TR:" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n";
-		self.text = self.text .. "               P1:" ..  string.format("%02X", ptrn.pulse1_start_index ) .. "\n";
-		--self.text = self.text .. "               NO:" ..  string.format("%02X", ptrn.noise_start_index ) .. "\n";
+		-- self.text = "Current Pattern:\n" ..  song.name .. " #" .. ptrn.patternindex .. "\n\n";
+		-- self.text = self.text .. "Pulse 2: $" ..  string.format("%02X", ptrn.pulse2_start_index ) .. "\n";
+		-- self.text = self.text .. "Pulse 1: $" ..  string.format("%02X", ptrn.pulse1_start_index ) .. "\n";
+		-- self.text = self.text .. "Tri:     $" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n";
+		-- if (ptrn.hasNoise) then
+		-- self.text = self.text .. "Noise:   $" ..  string.format("%02X", ptrn.noise_start_index ) .. "\n";
+		-- end
+		-- self.text = self.text .. "\nThe 'Allocate\nUnused Bytes' button\nwill allocate space\nto this pattern and \nchannel you\ncurrently have\nselected";
+		
+		self.text = {
+			{1,1,1}, 
+			"Current Pattern:\n" ..  song.name .. " #" .. ptrn.patternindex .. "\n\n",
+			CHANNEL_COLORS["pulse2"],
+			"Pulse 2: $" ..  string.format("%02X", ptrn.pulse2_start_index ) .. "\n",
+			CHANNEL_COLORS["pulse1"],
+			"Pulse 1: $" ..  string.format("%02X", ptrn.pulse1_start_index ) .. "\n",
+			CHANNEL_COLORS["tri"],
+			"Tri:     $" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n",
+			{1,1,1},
+			"\nThe 'Allocate\nUnused Bytes' button\nwill allocate space\nto this pattern and \nchannel you\ncurrently have\nselected",
+		}
+		if (ptrn.hasNoise) then
+			table.insert(self.text, 9, CHANNEL_COLORS["noise"]);
+			table.insert(self.text, 10, "Noise:   $" ..  string.format("%02X", ptrn.noise_start_index ) .. "\n");
+		end
 	end
 	function optimize:onRender()
 		
@@ -97,7 +117,7 @@ function initGUI()
 		
 		for i = DATA_START, DATA_END do
 			
-			local rectx = self.dispx + ( i % 16 ) * 16
+			local rectx = self.dispx + self.dispwidth - ( 16*16 ) + ( i % 16 ) * 16
 			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * 7)
 			local b = rom.data[i] -- byte
 			if (b:hasClaim(selectedSong,selectedPattern,"pulse2")) then
@@ -123,6 +143,13 @@ function initGUI()
 			love.graphics.rectangle("fill",rectx,recty,8,4);
 		end			
 	end
+	GROUP_OPTIMIZE.BTN_ALLOCATE = GuiElement:new{x=0,y=0,width=375,height=50,parent=GROUP_OPTIMIZE, text="Allocate Unused Bytes"};
+	function GROUP_OPTIMIZE.BTN_ALLOCATE:onClick()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		ptrn:allocateUnusedBytes( selectedChannel );
+	end
+	
 	GROUP_OPTIMIZE.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_OPTIMIZE, text="Back"};
 	function GROUP_OPTIMIZE.BTN_BACK:onClick()
 		GROUP_EDIT:hide(); GROUP_OPTIMIZE:hide(); openGUIWindow( GROUP_TOPBAR );

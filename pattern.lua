@@ -119,6 +119,64 @@ function Pattern:writePitch(midinote, existingnote, channel)
 	parseAllSongs();
 end
 
+function Pattern:allocateUnusedBytes(chnl)
+	-- finds the first unused byte in the music data section
+	local ind = rom:findNextUnusedIndex();
+	if not ind then return false; end
+	print(string.format( "%02X", ind ));
+	
+	local strt = self:getStartIndex(chnl);
+	-- last index, the index after which a new empty byte will be inserted
+	local lastind = strt + self:getBytesAvailable(chnl); 
+	local newbyte = Byte:new{ val = 0xff }
+
+	table.insert( rom.data, lastind, newbyte )
+	table.remove( rom.data, ind );
+	
+	for i = 0, SONG_COUNT - 1 do
+		local s = songs[i];
+		
+		for j = 0, s.patternCount - 1 do
+			local p = s.patterns[j];
+			
+			local hs  = p.header_start_index;
+			local p2s = p.pulse2_start_index;
+			-- translated back into memory address from the ROM address
+			local p2_out = p2s + 0x8000 - 0x10;
+			
+			-- the headers of every pattern that is past the point of insertion must be incremented by one
+			if p2s > lastind then
+				print( p:getName() );
+				rom:put(hs, p2_out + 1);
+			end
+			-- the headers of every pattern past the point of removal must be decremented by one
+			if p2s > ind then
+				print( p:getName() );
+				rom:put(hs, p2_out - 1);
+			end
+			-- special behavior for modifying the header of this very pattern in question (self)
+			if p2s == strt then
+			
+			end
+		end
+	end
+	
+	-- local pulse2_lo = rom:get( hdr_strt_ind + 1 );
+	-- local pulse2_hi = rom:get( hdr_strt_ind + 2 );
+	-- -- 0x8000 is the start of PRG ROM as seen by the NES memory mapping.
+	-- -- Also 0x10 is added on because thats the size of the iNES header (not seen by NES)
+	-- self.pulse2_start_index = ( pulse2_hi * 0x100 ) + pulse2_lo - 0x8000 + 0x10;
+	
+	-- self.tri_start_index    = self.pulse2_start_index + rom:get( hdr_strt_ind + 3 );
+	-- self.pulse1_start_index = self.pulse2_start_index + rom:get( hdr_strt_ind + 4 );
+	
+	-- if (self.hasNoise) then
+		-- self.noise_start_index = self.pulse2_start_index + rom:get( hdr_strt_ind + 5 );
+	-- end
+	
+	--parseAllSongs();
+end
+
 function Pattern:getNoteAtTick(tick, channel)
 	local notes = self:getNotes(channel);
 	local existingnote;
@@ -133,17 +191,33 @@ function Pattern:getNoteAtTick(tick, channel)
 	return existingnote;
 end
 
+-- counts both the bytes that are being used for music data (bytes_used) and unused bytes immediately after (bytes_avail)
 function Pattern:countBytes( chnl )
-	self:setBytesUsed( chnl, 0 );
+	self:setBytesUsed(      chnl, 0 );
+	self:setBytesAvailable( chnl, 0 );
+	
+	local DATA_START = 0x79C8;
+	local DATA_END   = 0x7F0F;
+	
 	local start = self:getStartIndex( chnl )
 	for i = start, start + 0xff do 
-	
 		local byt = rom.data[i];
-		if byt:hasClaim(self.songindex,self.patternindex, chnl ) then
-			
+		
+		if i > DATA_END then break; end
+		
+		-- bytes which are claimed by this pattern+channel are counted towards the bytes used number.
+		if byt:hasClaim(self.songindex, self.patternindex, chnl ) then
+			-- current bytes used
 			local cbu = self:getBytesUsed( chnl );
 			self:setBytesUsed( chnl, cbu + 1 );
+			
+		-- when a byte is found which is claimed, but not by this pattern+channel, it tells us we are no longer in our available space.
+		elseif #byt.song_claims > 0 then
+			break;
 		end
+		-- otherwise, we will continue counting adjacent unused bytes towards the available space.
+		local cba = self:getBytesAvailable( chnl );
+		self:setBytesAvailable( chnl, cba + 1 );
 	end
 end
 
@@ -346,6 +420,11 @@ function Pattern:parse( hdr_strt_ind )
 	return self.duration;
 end
 
+function Pattern:getName()
+	local song = songs[ self.songindex ];
+	return song.name .. " #" .. self.patternindex;
+end
+
 -- just a simple map. valid keys: "pulse1", "pulse2", "tri", "noise"
 function Pattern:getNotes(key)
 	if key == "pulse1" then
@@ -405,5 +484,17 @@ function Pattern:setBytesUsed(key, value)
 		self.tri_bytes_used    = value;
 	elseif key == "noise" then
 		self.noise_bytes_used  = value;
+	end
+end
+
+function Pattern:setBytesAvailable(key, value)
+	if key == "pulse1" then
+		self.pulse1_bytes_avail = value;
+	elseif key == "pulse2" then
+		self.pulse2_bytes_avail = value;
+	elseif key == "tri" then
+		self.tri_bytes_avail    = value;
+	elseif key == "noise" then
+		self.noise_bytes_avail  = value;
 	end
 end
