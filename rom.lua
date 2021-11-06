@@ -86,10 +86,28 @@ function Byte:new(o)
 	o.chnl_claims = {};
 	return o
 end
-
+-- if this byte is claimed by a specific song, pattern and channel
 function Byte:hasClaim(song,ptrn,chnl)
 	for i = 1, #self.song_claims do
 		if self.song_claims[i] == song and self.ptrn_claims[i] == ptrn and self.chnl_claims[i] == chnl then
+			return true;
+		end
+	end
+	return false;
+end
+-- if this byte is claimed by a specific channel (pattern/song doesnt matter)
+function Byte:hasChannelClaim(chnl)
+	for i = 1, #self.song_claims do
+		if self.chnl_claims[i] == chnl then
+			return true;
+		end
+	end
+	return false;
+end
+
+function Byte:hasSongPatternClaim(song,ptrn)
+	for i = 1, #self.song_claims do
+		if self.song_claims[i] == song and self.ptrn_claims[i] == ptrn then
 			return true;
 		end
 	end

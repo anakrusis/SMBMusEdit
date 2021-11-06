@@ -26,6 +26,7 @@ function love.load()
 	success = love.window.setMode( 800, 600, {resizable=true, minwidth=800, minheight=600} )
 	font = love.graphics.newFont("zeldadxt.ttf", 24)
 	love.graphics.setFont(font)
+	frameCount = 0; -- just how many ticks the window has been open
 	
 	rom = ROM:new(); rom:import("smbmusedit-2/mario.nes");
 	
@@ -199,6 +200,7 @@ function love.update(dt)
 	PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
 	
 	updateGUI();
+	frameCount = frameCount + 1;
 end
 
 function errorText(text)

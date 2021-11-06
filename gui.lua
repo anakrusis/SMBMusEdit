@@ -120,16 +120,16 @@ function initGUI()
 			local rectx = self.dispx + self.dispwidth - ( 16*16 ) + ( i % 16 ) * 16
 			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * 7)
 			local b = rom.data[i] -- byte
-			if (b:hasClaim(selectedSong,selectedPattern,"pulse2")) then
+			if (b:hasChannelClaim("pulse2")) then
 				love.graphics.setColor(CHANNEL_COLORS["pulse2"]);
 			
-			elseif (b:hasClaim(selectedSong,selectedPattern,"tri")) then
+			elseif (b:hasChannelClaim("tri")) then
 				love.graphics.setColor(CHANNEL_COLORS["tri"]);
 			
-			elseif (b:hasClaim(selectedSong,selectedPattern,"pulse1")) then
+			elseif (b:hasChannelClaim("pulse1")) then
 				love.graphics.setColor(CHANNEL_COLORS["pulse1"]);
 			
-			elseif (b:hasClaim(selectedSong,selectedPattern,"noise")) then
+			elseif (b:hasChannelClaim("noise")) then
 				love.graphics.setColor(CHANNEL_COLORS["noise"]);
 			
 			-- used byte
@@ -141,6 +141,11 @@ function initGUI()
 				love.graphics.setColor(0,1,0);
 			end
 			love.graphics.rectangle("fill",rectx,recty,8,4);
+			
+			if (b:hasSongPatternClaim(selectedSong,selectedPattern)) then
+				love.graphics.setColor(1,1,0);
+				love.graphics.rectangle("line",rectx,recty,8,4);
+			end
 		end			
 	end
 	GROUP_OPTIMIZE.BTN_ALLOCATE = GuiElement:new{x=0,y=0,width=375,height=50,parent=GROUP_OPTIMIZE, text="Allocate Unused Bytes"};

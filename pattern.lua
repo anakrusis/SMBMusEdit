@@ -146,15 +146,15 @@ function Pattern:allocateUnusedBytes(chnl)
 			
 			-- the headers of every pattern that is past the point of insertion must be incremented by one
 			if p2s > lastind then
-				--local out = rom:getWord(hs);
+				local out = rom:getWord(hs);
 				--print( p:getName() .. " | " .. string.format("%04X", p2s) .. " | " .. string.format("%04X", p2_out) );
-				rom:putWord(hs, p2_out + 1);
+				rom:putWord(hs, out + 1);
 			end
 			-- -- the headers of every pattern past the point of removal must be decremented by one
 			if p2s > ind then
-				--local out = rom:getWord(hs);
+				local out = rom:getWord(hs);
 				--print( p:getName() .. " | " .. string.format("%04X", p2s) .. " | " .. string.format("%04X", p2_out) );
-				rom:putWord(hs, p2_out - 1);
+				rom:putWord(hs, out - 1);
 			end
 			-- special behavior for modifying the header of this very pattern in question (self)
 			-- if p2s == strt then
