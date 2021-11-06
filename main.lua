@@ -88,9 +88,13 @@ function parseAllSongs()
 		byt.chnl_claims = {};
 	end
 
-	-- and then parses the songs all
+	-- then parses the songs all
 	for i = 0, SONG_COUNT - 1 do
 		local s = songs[i]; s:parse();
+	end
+	-- after parsing is done we count the used bytes
+	for i = 0, SONG_COUNT - 1 do
+		local s = songs[i]; s:countBytes();
 	end
 end
 
@@ -243,6 +247,8 @@ function playChannel( notes, source )
 				source:stop();
 			else
 				local freq = FREQ_TABLE[ note.val ];
+				if not freq then source:stop(); return end
+				
 				if (source == SRC_TRI) then
 					freq = freq / 2;
 				end

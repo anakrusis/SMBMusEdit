@@ -4,20 +4,22 @@ ROM = {
 	data = {}
 }
 
+-- bytes
 function ROM:get(ind)
 	return self.data[ind].val;
 end
-
--- bytes
 function ROM:put(ind,value)
 	-- todo maybe return an error or something if inputted value exceeds 0xff
 	self.data[ind].val = value;
 end
 
--- words (little endian)
+-- little-endian words, index refers to first byte
 function ROM:putWord(ind,value)
 	self.data[ind].val     = value % 0x100;
 	self.data[ind + 1].val = math.floor(value / 0x100);
+end
+function ROM:getWord(ind)
+	return ( self.data[ind + 1].val * 0x100 ) + self.data[ind].val
 end
 
 function ROM:findNextUnusedIndex()

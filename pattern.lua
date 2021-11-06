@@ -139,25 +139,27 @@ function Pattern:allocateUnusedBytes(chnl)
 		for j = 0, s.patternCount - 1 do
 			local p = s.patterns[j];
 			
-			local hs  = p.header_start_index;
+			local hs  = p.header_start_index + 1;
 			local p2s = p.pulse2_start_index;
 			-- translated back into memory address from the ROM address
 			local p2_out = p2s + 0x8000 - 0x10;
 			
 			-- the headers of every pattern that is past the point of insertion must be incremented by one
 			if p2s > lastind then
-				print( p:getName() );
-				rom:put(hs, p2_out + 1);
+				--local out = rom:getWord(hs);
+				--print( p:getName() .. " | " .. string.format("%04X", p2s) .. " | " .. string.format("%04X", p2_out) );
+				rom:putWord(hs, p2_out + 1);
 			end
-			-- the headers of every pattern past the point of removal must be decremented by one
+			-- -- the headers of every pattern past the point of removal must be decremented by one
 			if p2s > ind then
-				print( p:getName() );
-				rom:put(hs, p2_out - 1);
+				--local out = rom:getWord(hs);
+				--print( p:getName() .. " | " .. string.format("%04X", p2s) .. " | " .. string.format("%04X", p2_out) );
+				rom:putWord(hs, p2_out - 1);
 			end
 			-- special behavior for modifying the header of this very pattern in question (self)
-			if p2s == strt then
+			-- if p2s == strt then
 			
-			end
+			-- end
 		end
 	end
 	
@@ -174,7 +176,7 @@ function Pattern:allocateUnusedBytes(chnl)
 		-- self.noise_start_index = self.pulse2_start_index + rom:get( hdr_strt_ind + 5 );
 	-- end
 	
-	--parseAllSongs();
+	parseAllSongs();
 end
 
 function Pattern:getNoteAtTick(tick, channel)
@@ -393,11 +395,9 @@ function Pattern:parse( hdr_strt_ind )
 	self.header_start_index = hdr_strt_ind;
 	self.tempo = rom:get( hdr_strt_ind );
 	
-	local pulse2_lo = rom:get( hdr_strt_ind + 1 );
-	local pulse2_hi = rom:get( hdr_strt_ind + 2 );
 	-- 0x8000 is the start of PRG ROM as seen by the NES memory mapping.
 	-- Also 0x10 is added on because thats the size of the iNES header (not seen by NES)
-	self.pulse2_start_index = ( pulse2_hi * 0x100 ) + pulse2_lo - 0x8000 + 0x10;
+	self.pulse2_start_index = rom:getWord( hdr_strt_ind + 1 ) - 0x8000 + 0x10;
 	
 	self.tri_start_index    = self.pulse2_start_index + rom:get( hdr_strt_ind + 3 );
 	self.pulse1_start_index = self.pulse2_start_index + rom:get( hdr_strt_ind + 4 );

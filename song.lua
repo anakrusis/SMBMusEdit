@@ -55,8 +55,10 @@ function Song:parse()
 		
 		self.patterns[i] = p;
 	end
-	
-	-- after parsing is done we count the used bytes
+end
+
+-- this step must be done after all parsing is complete
+function Song:countBytes()
 	for i = 0, self.patternCount - 1 do
 		local p = self.patterns[i];
 		
