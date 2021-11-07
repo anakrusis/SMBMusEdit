@@ -111,6 +111,7 @@ function Byte:new(o)
 	o.chnl_claims = {};
 	return o
 end
+
 -- if this byte is claimed by a specific song, pattern and channel
 function Byte:hasClaim(song,ptrn,chnl)
 	for i = 1, #self.song_claims do
