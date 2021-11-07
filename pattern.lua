@@ -120,19 +120,24 @@ function Pattern:writePitch(midinote, existingnote, channel)
 end
 
 function Pattern:allocateUnusedBytes(chnl)
-	-- finds the first unused byte in the music data section
-	local ind = rom:findNextUnusedIndex();
+	local ind, lastind, strt, newbyte;
+
+	ind = rom:findNextUnusedUnqueuedIndex(self.songindex, self.patternindex, chnl);
 	if not ind then return false; end
 	print(string.format( "%02X", ind ));
-	
-	local strt = self:getStartIndex(chnl);
+		
+	strt = self:getStartIndex(chnl);
 	-- last index, the index after which a new empty byte will be inserted
-	local lastind = strt + self:getBytesAvailable(chnl); 
-	local newbyte = Byte:new{ val = 0xff }
+	lastind = strt + self:getBytesAvailable(chnl); 
 
+	newbyte = Byte:new{ val = 0xff }
 	table.insert( rom.data, lastind, newbyte )
 	table.remove( rom.data, ind );
 	
+	-- now we must traverse all the headers and modify the ones between the insertion site and removal site.
+	-- because multiple patterns can share the same header, and we only want to modify each one once, 
+	-- we have to check for the ones that we already have seen
+	seen_hdr_strts = {};
 	for i = 0, SONG_COUNT - 1 do
 		local s = songs[i];
 		
@@ -141,26 +146,36 @@ function Pattern:allocateUnusedBytes(chnl)
 			
 			local hs  = p.header_start_index + 1;
 			local p2s = p.pulse2_start_index;
-			-- translated back into memory address from the ROM address
-			local p2_out = p2s + 0x8000 - 0x10;
 			
-			-- the headers of every pattern that is past the point of insertion must be incremented by one
-			if p2s > lastind then
-				local out = rom:getWord(hs);
-				--print( p:getName() .. " | " .. string.format("%04X", p2s) .. " | " .. string.format("%04X", p2_out) );
-				rom:putWord(hs, out + 1);
+			if not seen_hdr_strts[hs] then
+				-- the headers of every pattern that is past the point of insertion must be incremented by one
+				if p2s > lastind then
+					local out = rom:getWord(hs);
+					rom:putWord(hs, out + 1);
+				end
+				-- the headers of every pattern past the point of removal must be decremented by one
+				if p2s > ind then
+					local out = rom:getWord(hs);
+					rom:putWord(hs, out - 1);
+				end
+				
+				seen_hdr_strts[hs] = true;
 			end
-			-- -- the headers of every pattern past the point of removal must be decremented by one
-			if p2s > ind then
-				local out = rom:getWord(hs);
-				--print( p:getName() .. " | " .. string.format("%04X", p2s) .. " | " .. string.format("%04X", p2_out) );
-				rom:putWord(hs, out - 1);
-			end
-			-- special behavior for modifying the header of this very pattern in question (self)
-			-- if p2s == strt then
-			
-			-- end
 		end
+	end
+	-- now the internal pointers of this pattern must be adjusted to accomodate the extra byte added in
+	local trs = self.tri_start_index; local p1s = self.pulse1_start_index;
+	if trs >= lastind then
+		print("tri morethan");
+		local tripos = self.header_start_index + 3;
+		local out = rom:get( tripos );
+		rom:put( tripos, out + 1 );
+	end
+	if p1s >= lastind then
+		print("p1 morethan");
+		local p1pos = self.header_start_index + 4;
+		local out = rom:get( p1pos );
+		rom:put( p1pos, out + 1 );
 	end
 	
 	-- local pulse2_lo = rom:get( hdr_strt_ind + 1 );

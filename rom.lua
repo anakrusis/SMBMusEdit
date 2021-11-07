@@ -34,6 +34,31 @@ function ROM:findNextUnusedIndex()
 	return false;
 end
 
+-- the first unused index not in queue to be for this particular song+ptrn+chnl
+function ROM:findNextUnusedUnqueuedIndex(song,ptrn,chnl)
+	local DATA_START = 0x79C8;
+	local DATA_END   = 0x7F0F;
+	
+	for i = DATA_START, DATA_END do
+		if #self.data[i].song_claims == 0 then
+			
+			-- iterating backwards to find the first used index.
+			-- if this used index is NOT claimed by the song+ptrn+chnl, then return it!
+			-- otherwise, stop iterating backwards and move onto the next unused byte
+			for j = 0, 0xff, 1 do
+				local ind = i - j;
+				if #self.data[ind].song_claims > 0 then
+					if not self.data[ind]:hasClaim(song,ptrn,chnl) then
+						return i;
+					end
+					break;
+				end
+			end
+		end
+	end
+	return false;
+end
+
 function ROM:export(path)
 	local output = ""
 	local file = io.open(path, "wb")

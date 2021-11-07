@@ -117,8 +117,10 @@ function initGUI()
 		
 		for i = DATA_START, DATA_END do
 			
-			local rectx = self.dispx + self.dispwidth - ( 16*16 ) + ( i % 16 ) * 16
-			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * 7)
+			local rw = 32; local rh = 8;
+			
+			local rectx = self.dispx + 320 + ( i % 16 ) * rw
+			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * rh)
 			local b = rom.data[i] -- byte
 			if (b:hasChannelClaim("pulse2")) then
 				love.graphics.setColor(CHANNEL_COLORS["pulse2"]);
@@ -140,11 +142,11 @@ function initGUI()
 			else
 				love.graphics.setColor(0,1,0);
 			end
-			love.graphics.rectangle("fill",rectx,recty,8,4);
+			love.graphics.rectangle("fill",rectx,recty,rw * 0.75,rh * 0.75);
 			
 			if (b:hasSongPatternClaim(selectedSong,selectedPattern)) then
 				love.graphics.setColor(1,1,0);
-				love.graphics.rectangle("line",rectx,recty,8,4);
+				love.graphics.rectangle("line",rectx,recty,rw * 0.75,rh * 0.75);
 			end
 		end			
 	end
