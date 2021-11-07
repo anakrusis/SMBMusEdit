@@ -100,7 +100,7 @@ function parseAllSongs()
 end
 
 function love.keypressed(key)
-	if key == "return" then
+	if key == "space" or key == "return" then
 		playing = not playing;
 		playpos = 0; songpos = songs[selectedSong].patterns[selectedPattern].starttime;
 		playingPattern = selectedPattern;
@@ -119,9 +119,9 @@ function love.mousepressed( x,y,button )
 		if love.mouse.getY() > DIVIDER_POS and love.mouse.getX() > SIDE_PIANO_WIDTH then
 		
 			local note = math.ceil(piano_roll_untray(y));
-			local tick = math.floor(piano_roll_untrax(x));
+			local tick = (piano_roll_untrax(x));
 			local ptrn = songs[selectedSong].patterns[selectedPattern];
-			local existingnote = ptrn:getNoteAtTick(tick, selectedChannel);
+			local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
 			
 			if (not existingnote) then return end
 			-- clicking the right edge of the note: initates dragging for rhythm changing
@@ -302,7 +302,7 @@ function love.draw()
 	
 	love.graphics.setColor( 1,1,1 );
 	local bytes_str = ptrn:getBytesUsed(selectedChannel) .. "/" .. ptrn:getBytesAvailable(selectedChannel);
-	love.graphics.print( bytes_str, WINDOW_WIDTH - 100, DIVIDER_POS + 8 )
+	love.graphics.print( bytes_str, WINDOW_WIDTH - 116, DIVIDER_POS + 8 )
 	
 	-- pattern editor play line
 	love.graphics.setColor( 1,0,0 );

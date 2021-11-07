@@ -126,13 +126,14 @@ function Pattern:allocateUnusedBytes(chnl)
 	if not ind then return false; end
 	print(string.format( "%02X", ind ));
 	
-	local oldsongind; local oldsongptrn;
+	local oldsongind; local oldptrnind;
 	-- need to know what song "ind" is queued up after... (technically doesn't matter which, if multiple songs/patterns share the byte)
 	for j = 0, 0xff, 1 do
 		local ci = ind - j;
 		if #rom.data[ci].song_claims > 0 then
-			oldsongind  = rom.data[ci].song_claims[0];
-			oldsongptrn = rom.data[ci].ptrn_claims[0];
+			oldsongind = rom.data[ci].song_claims[1];
+			oldptrnind = rom.data[ci].ptrn_claims[1];
+			break;
 		end
 	end
 		
@@ -173,40 +174,67 @@ function Pattern:allocateUnusedBytes(chnl)
 			end
 		end
 	end
-	-- now the internal pointers of this pattern must be adjusted to accomodate the extra byte added in
-	local out;
-	local trs = self.tri_start_index; 
-	local tripos = self.header_start_index + 3;
-	out = rom:get( tripos );
-	if trs >= lastind then
-		rom:put( tripos, out + 1 );
-	elseif trs >= ind then
-		rom:put( tripos, out - 1 );
-	end
 	
-	local p1s = self.pulse1_start_index;
-	local p1pos = self.header_start_index + 4;
-	out = rom:get( p1pos );
-	if p1s >= lastind then
-		rom:put( p1pos, out + 1 );
-	elseif p1s >= ind then
-		rom:put( p1pos, out - 1 );
-	end
+	self:adjustInternalPointers(lastind, ind);
 	
-	if (self.hasNoise) then
-		local nos = self.noise_start_index;
-		local noipos = self.header_start_index + 5;
-		out = rom:get( noipos );
-		if (nos >= lastind) then
-			rom:put( noipos, out + 1 );
-		elseif (nos >= ind) then
-			rom:put( noipos, out - 1 );
-		end
-	end
-	
-	-- todo fix the pointers of the song that is being taken its byte from.
+	local oldsong = songs[oldsongind];
+	local oldptrn = oldsong.patterns[oldptrnind];
+	print(oldptrn:getName());
+	oldptrn:adjustInternalPointers(lastind, ind);
 	
 	parseAllSongs();
+end
+
+-- given an Insertion Point of a new byte and a Removal Point of another byte. doesnt matter which comes first in the rom
+function Pattern:adjustInternalPointers(ip, rp)
+
+	local greatest_start = math.max( self.pulse1_start_index, self.tri_start_index );
+	if ( self.hasNoise ) then
+		greatest_start = math.max( greatest_start, self.noise_start_index );
+	end
+	
+	local out;
+	local tripos = self.header_start_index + 3;
+	local p1pos = self.header_start_index + 4;
+	local nopos = self.header_start_index + 5;
+	
+	-- checking that the changed indices are truly internal to this patterns data
+	-- first at the insertion point:
+	if self.pulse2_start_index <= ip and ip <= greatest_start then
+		
+		if self.tri_start_index >= ip then
+			out = rom:get( tripos );
+			rom:put( tripos, out + 1 );
+		end
+		if self.pulse1_start_index >= ip then
+			out = rom:get( p1pos );
+			rom:put( p1pos, out + 1 );
+		end
+		if (self.hasNoise) then
+			if self.noise_start_index >= ip then
+				out = rom:get( nopos );
+				rom:put( nopos, out + 1 );
+			end
+		end
+	end
+	-- and at the removal point:
+	if self.pulse2_start_index <= rp and rp <= greatest_start then
+		
+		if self.tri_start_index >= rp then
+			out = rom:get( tripos );
+			rom:put( tripos, out - 1 );
+		end
+		if self.pulse1_start_index >= rp then
+			out = rom:get( p1pos );
+			rom:put( p1pos, out - 1 );
+		end
+		if (self.hasNoise) then
+			if self.noise_start_index >= rp then
+				out = rom:get( nopos );
+				rom:put( nopos, out - 1 );
+			end
+		end
+	end
 end
 
 function Pattern:getNoteAtTick(tick, channel)
