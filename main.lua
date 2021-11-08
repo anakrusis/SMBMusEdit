@@ -167,21 +167,25 @@ function love.mousemoved( x, y, dx, dy, istouch )
 end
 
 function love.wheelmoved( x, y )
-	-- mouse wheel on the piano roll: scrolls vertically
-	if love.mouse.getY() > DIVIDER_POS then
-		if love.keyboard.isDown( "lctrl" ) then
-			if love.mouse.getY() > DIVIDER_POS then
-				PIANOROLL_ZOOMX = PIANOROLL_ZOOMX + (y / 2);
-				PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
+	if GROUP_OPTIMIZE.active then
+		OPTIMIZE_SCROLL = OPTIMIZE_SCROLL - ((y * 50));
+	else
+		-- mouse wheel on the piano roll: scrolls vertically
+		if love.mouse.getY() > DIVIDER_POS then
+			if love.keyboard.isDown( "lctrl" ) then
+				if love.mouse.getY() > DIVIDER_POS then
+					PIANOROLL_ZOOMX = PIANOROLL_ZOOMX + (y / 2);
+					PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
+				else
+					PATTERN_ZOOMX = PATTERN_ZOOMX + (y / 2);
+					PATTERN_ZOOMX = math.max(0.5, PATTERN_ZOOMX);
+				end
 			else
-				PATTERN_ZOOMX = PATTERN_ZOOMX + (y / 2);
-				PATTERN_ZOOMX = math.max(0.5, PATTERN_ZOOMX);
+				PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - ((y * 50) / PIANOROLL_ZOOMY);
 			end
-		else
-			PIANOROLL_SCROLLY = PIANOROLL_SCROLLY - ((y * 50) / PIANOROLL_ZOOMY);
+		else	
+			
 		end
-	else	
-		
 	end
 end
 

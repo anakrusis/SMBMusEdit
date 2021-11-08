@@ -3,6 +3,7 @@ function initGUI()
 	-- scroll values for the two editors, pattern editor and piano roll editor
 	PATTERN_SCROLL = 0; PATTERN_ZOOMX = 1;
 	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0; PIANOROLL_ZOOMX = 4; PIANOROLL_ZOOMY = 20;
+	OPTIMIZE_SCROLL   = 0;
 	DIVIDER_POS = 300; SIDE_PIANO_WIDTH = 128;
 	
 	NOTE_DRAGGING = nil;
@@ -61,6 +62,10 @@ function initGUI()
 	function GROUP_PTRN_EDIT.ELM_TRI:onUpdate()
 		self.width = 2000;
 	end
+	GROUP_PTRN_EDIT.ELM_NOISE = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_PTRN_EDIT, name="noisecntr", autopos = "left", autosizey = true, padding = 0};
+	function GROUP_PTRN_EDIT.ELM_NOISE:onUpdate()
+		self.width = 2000;
+	end
 	
 	GROUP_FILE = GuiElement:new{x=0, y=55, width=500, height=3, name="file_container", autopos = "left", autosize = true};
 	GROUP_FILE:hide();
@@ -81,15 +86,25 @@ function initGUI()
 	function optimize:onUpdate()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
-		-- self.text = "Current Pattern:\n" ..  song.name .. " #" .. ptrn.patternindex .. "\n\n";
-		-- self.text = self.text .. "Pulse 2: $" ..  string.format("%02X", ptrn.pulse2_start_index ) .. "\n";
-		-- self.text = self.text .. "Pulse 1: $" ..  string.format("%02X", ptrn.pulse1_start_index ) .. "\n";
-		-- self.text = self.text .. "Tri:     $" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n";
-		-- if (ptrn.hasNoise) then
-		-- self.text = self.text .. "Noise:   $" ..  string.format("%02X", ptrn.noise_start_index ) .. "\n";
-		-- end
-		-- self.text = self.text .. "\nThe 'Allocate\nUnused Bytes' button\nwill allocate space\nto this pattern and \nchannel you\ncurrently have\nselected";
 		
+		local cbinfo = "Byte Addr.: $";
+		local rw = 32; local rh = 16;
+		local x = math.floor((love.mouse.getX() - 320 - self.dispx) / rw); 
+		local y = math.floor((love.mouse.getY() + OPTIMIZE_SCROLL - self.dispy) / rh)
+		local ind = 0x79c0 + ( 16 * y ) + x;
+		local cb = rom.data[ind];
+		
+		cbinfo = cbinfo .. string.format("%04X", ind)
+		cbinfo = cbinfo .. "\nValue: " .. string.format("%02X", cb.val);
+		
+		for i = 1, #cb.song_claims do
+			local song = songs[ cb.song_claims[i] ];
+			local ptrn = song.patterns[ cb.ptrn_claims[i] ];
+			local chnl = cb.chnl_claims[i];
+			cbinfo = cbinfo .. "\n" .. ptrn:getName() .. " " .. chnl;
+		end
+		
+		cbinfo = cbinfo .. "\n\n";
 		self.text = {
 			{1,1,1}, 
 			"Current Pattern:\n" ..  song.name .. " #" .. ptrn.patternindex .. "\n\n",
@@ -98,9 +113,11 @@ function initGUI()
 			CHANNEL_COLORS["pulse1"],
 			"Pulse 1: $" ..  string.format("%02X", ptrn.pulse1_start_index ) .. "\n",
 			CHANNEL_COLORS["tri"],
-			"Tri:     $" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n",
+			"Tri:     $" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n\n",
 			{1,1,1},
-			"\nThe 'Allocate\nUnused Bytes' button\nwill allocate space\nto this pattern and \nchannel you\ncurrently have\nselected",
+			cbinfo,
+			{1,1,1},
+			"The 'Allocate\nUnused Bytes' button\nwill allocate space\nto the pattern and \nchannel currently\nopened in the piano\nroll.",
 		}
 		if (ptrn.hasNoise) then
 			table.insert(self.text, 9, CHANNEL_COLORS["noise"]);
@@ -117,10 +134,10 @@ function initGUI()
 		
 		for i = DATA_START, DATA_END do
 			
-			local rw = 32; local rh = 8;
+			local rw = 32; local rh = 16;
 			
 			local rectx = self.dispx + 320 + ( i % 16 ) * rw
-			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * rh)
+			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * rh) - OPTIMIZE_SCROLL; 
 			local b = rom.data[i] -- byte
 			if (b:hasChannelClaim("pulse2")) then
 				love.graphics.setColor(CHANNEL_COLORS["pulse2"]);
@@ -142,11 +159,13 @@ function initGUI()
 			else
 				love.graphics.setColor(0,1,0);
 			end
-			love.graphics.rectangle("fill",rectx,recty,rw * 0.75,rh * 0.75);
-			
-			if (b:hasSongPatternClaim(selectedSong,selectedPattern)) then
-				love.graphics.setColor(1,1,0);
-				love.graphics.rectangle("line",rectx,recty,rw * 0.75,rh * 0.75);
+			if (recty >= self.dispy and recty <= self.dispy + self.dispheight) then
+				love.graphics.rectangle("fill",rectx,recty,rw * 0.75,rh * 0.75);
+				
+				if (b:hasSongPatternClaim(selectedSong,selectedPattern)) then
+					love.graphics.setColor(1,1,0);
+					love.graphics.rectangle("line",rectx,recty,rw * 0.75,rh * 0.75);
+				end
 			end
 		end			
 	end
@@ -206,7 +225,7 @@ function updatePatternGUI( song )
 	GROUP_PTRN_EDIT.ELM_PULSE2.children = {}
 	GROUP_PTRN_EDIT.ELM_TRI.children    = {}
 	GROUP_PTRN_EDIT.ELM_PULSE1.children = {}
-	--GROUP_PTRN_EDIT.ELM_NOISE.children  = {}
+	GROUP_PTRN_EDIT.ELM_NOISE.children  = {}
 	
 	ElementPattern = GuiElement:new{
 		pattern = nil, -- numerical index
@@ -226,7 +245,6 @@ function updatePatternGUI( song )
 	function ElementPattern:onUpdate()
 		local ptrn = songs[self.song].patterns[self.pattern];
 		self.width = ptrn.duration * PATTERN_ZOOMX;
-		
 		self.bg_color = CHANNEL_COLORS[ self.channel ];
 	end
 	
@@ -241,9 +259,15 @@ function updatePatternGUI( song )
 		
 		if (not hinote or not lonote) then return; end
 		
-		for i = 0, #notes do
-			local note = notes[i];
-			local x = (note.starttime * PATTERN_ZOOMX) + self.dispx;
+		local amount;
+		if (self.channel == "noise" and ptrn.noiseduration ~= 0) then
+			amount = 1+#notes * ( ptrn.duration / ptrn.noiseduration )
+		else
+			amount = 1+#notes;
+		end
+		local x = self.dispx;
+		for i = 0, amount do
+			local note = notes[i % (#notes+1)];
 			
 			local padding = 5;
 			
@@ -261,6 +285,8 @@ function updatePatternGUI( song )
 				love.graphics.setColor( self.text_color );
 				love.graphics.rectangle( "fill", x, y, width, height );
 			end
+			
+			x = x + note.duration * PATTERN_ZOOMX
 		end
 	end
 	
@@ -270,6 +296,7 @@ function updatePatternGUI( song )
 		local p2 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE2, song = song.songindex, pattern = i, channel = "pulse2"};
 		local p1 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE1, song = song.songindex, pattern = i, channel = "pulse1"};
 		local tr = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_TRI,    song = song.songindex, pattern = i, channel = "tri"};
+		local no = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_NOISE,  song = song.songindex, pattern = i, channel = "noise"};
 	end
 end
 

@@ -98,10 +98,8 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 end
 
 function Pattern:writePitch(midinote, existingnote, channel)
-	--if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then return; end
-	
 	local newval;
-	if (channel == "pulse2" or channel == "pulse1") then
+	if (channel == "pulse2" or channel == "pulse1" or channel == "noise") then
 		newval = PITCH_VALS[midinote];
 	end
 	if (channel == "tri") then
@@ -117,8 +115,8 @@ function Pattern:writePitch(midinote, existingnote, channel)
 	
 	local ind = existingnote.rom_index;
 	
-	-- retains the rhythm value of the original note if pulse1
-	if (channel == "pulse1") then
+	-- retains the rhythm value of the original note if pulse1 or noise
+	if channel == "pulse1" or channel == "noise" then
 		local rhythm = bitwise.band(rom:get(ind), 0xc1); -- 1100 0001 
 		local pitch  = bitwise.band(newval,       0x3e); -- 0011 1110
 		
@@ -126,7 +124,6 @@ function Pattern:writePitch(midinote, existingnote, channel)
 	end
 	
 	rom:put(ind, newval);
-	--existingnote.pitch = 80;
 	parseAllSongs();
 end
 
@@ -400,7 +397,7 @@ function Pattern:parseCompressedNotes( start_index, target_table )
 		local ind = start_index + i;
 		local val = rom:get(ind);
 		
-		if self.duration > 0 and duration >= self.duration then
+		if self.duration ~= nil and duration >= self.duration then
 			return;
 		end
 		
@@ -455,7 +452,7 @@ end
 -- Parses pattern, given a header start index ( hdr_strt_ind ) as an entry point
 function Pattern:parse( hdr_strt_ind )
 
-	self.duration = 0;
+	self.duration = nil;
 	self.noiseduration = 0; -- noise pattern usually has a different length
 	
 	self.pulse2_notes = {};
