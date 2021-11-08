@@ -57,18 +57,15 @@ end
 function Pattern:changeRhythm( tick, existingnote, channel )
 	local relativedur = tick - existingnote.starttime;
 	
-	-- -- for now it's just finding the nearest tempo value in whatever direction specified (increasing or decreasing)
+	-- for now it's just finding the nearest tempo value in whatever direction specified (increasing or decreasing)
 	local nearestdiff = 100000; local ind;
 	
 	for i = self.tempo, self.tempo+7 do
 	
 		local ctv = RHYTHM_TABLE[i]; -- current tempo value
-		--local hyd = existingnote.starttime + ctv; -- hypothetical duration
 		local diff = math.abs(ctv - relativedur);
 		
 		if (diff < nearestdiff) then
-		
-		--if (math.abs(existingnote.duration - ctv) < nearestdiff and ctv ~= existingnote.duration and ( ctv > existingnote.duration ) == increasing ) then
 			nearestdiff = diff; ind = i;
 		end
 		
@@ -76,11 +73,25 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 	newdur = RHYTHM_TABLE[ind];
 	if not newdur then return; end 
 	
-	--print("you tried: " .. relativedur .. " new dur: " .. newdur )
-	
-	local previous = rom:get(existingnote.rom_index - 1);
-	if (previous >= 0x80 and previous <= 0x87) then
-		rom:put(existingnote.rom_index - 1, 0x80 + ind - self.tempo);
+	if (channel == "pulse1") then
+		local pitch = bitwise.band(rom:get( existingnote.rom_index ), 0x3e); -- 0011 1110
+		local newrhythm = ind - self.tempo; print(string.format( "%02X", newrhythm ));
+		local fours_bit = bitwise.band( newrhythm, 0x04 );
+		local two_one_b = bitwise.band( newrhythm, 0x03 );
+		
+		local rhythm = (fours_bit / 4) + (two_one_b * 0x40);
+		rom:put(existingnote.rom_index, pitch + rhythm);
+		
+		--newrhythm = 
+		
+		--local less_sig_bits = bitwise.band( val, 0xc0 );
+		--local more_sig_bit  = val % 2;
+		--current_rhythm_val  = 0x80 + ( more_sig_bit * 4 ) + ( less_sig_bits / 0x40 );
+	else
+		local previous = rom:get(existingnote.rom_index - 1);
+		if (previous >= 0x80 and previous <= 0x87) then
+			rom:put(existingnote.rom_index - 1, 0x80 + ind - self.tempo);
+		end
 	end
 	
 	parseAllSongs();
@@ -124,7 +135,6 @@ function Pattern:allocateUnusedBytes(chnl)
 
 	ind = rom:findNextUnusedUnqueuedIndex(self.songindex, self.patternindex, chnl);
 	if not ind then return false; end
-	print(string.format( "%02X", ind ));
 	
 	local oldsongind; local oldptrnind;
 	-- need to know what song "ind" is queued up after... (technically doesn't matter which, if multiple songs/patterns share the byte)
@@ -177,10 +187,13 @@ function Pattern:allocateUnusedBytes(chnl)
 	
 	self:adjustInternalPointers(lastind, ind);
 	
-	local oldsong = songs[oldsongind];
-	local oldptrn = oldsong.patterns[oldptrnind];
-	print(oldptrn:getName());
-	oldptrn:adjustInternalPointers(lastind, ind);
+	-- if transferring within the same ptrn, the pointers are only done on that one ptrn once.
+	-- otherwise, the internal pointers of boths ptrn must be fixed
+	if (oldsongind ~= self.songindex and oldptrnind ~= self.patternindex) then
+		local oldsong = songs[oldsongind];
+		local oldptrn = oldsong.patterns[oldptrnind];
+		oldptrn:adjustInternalPointers(lastind, ind);
+	end
 	
 	parseAllSongs();
 end
