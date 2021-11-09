@@ -11,8 +11,8 @@ function initGUI()
 	elements = {};
 	
 	CHANNEL_COLORS = {};
-	CHANNEL_COLORS["pulse2"] = { 1,   0, 1 }
-	CHANNEL_COLORS["pulse1"] = { 0.5, 0, 0.5 }
+	CHANNEL_COLORS["pulse2"] = { 1,   0, 0.75 }
+	CHANNEL_COLORS["pulse1"] = { 0.5, 0, 0.75 }
 	CHANNEL_COLORS["tri"]    = { 0,   0, 1 }
 	CHANNEL_COLORS["noise"]  = { 0, 0.5, 0.5 }
 	
@@ -26,9 +26,11 @@ function initGUI()
 	end
 	local prevsong = GuiElement:new{x=0,y=0,width=50,height=50,parent=GROUP_TOPBAR2, name="prevsong", text="<"};
 	function prevsong:onClick()
-		selectSong((selectedSong - 1) % SONG_COUNT);
-		-- todo make function loadSong, must set selectedPattern and selectedChannel to valid values
-		
+		selectSong((selectedSong - 1) % SONG_COUNT);	
+	end
+	local currsong = GuiElement:new{x=0,y=0,width=300,height=50,parent=GROUP_TOPBAR2, name="currsong", text="<"};
+	function currsong:onUpdate()
+		self.text = songs[selectedSong].name;
 	end
 	local nextsong = GuiElement:new{x=0,y=0,width=50,height=50,parent=GROUP_TOPBAR2, name="nextsong", text=">"};
 	function nextsong:onClick()
@@ -65,6 +67,7 @@ function initGUI()
 	GROUP_PTRN_EDIT.ELM_NOISE = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_PTRN_EDIT, name="noisecntr", autopos = "left", autosizey = true, padding = 0};
 	function GROUP_PTRN_EDIT.ELM_NOISE:onUpdate()
 		self.width = 2000;
+		if (songs[selectedSong].hasNoise) then self:show() else self:hide() end
 	end
 	
 	GROUP_FILE = GuiElement:new{x=0, y=55, width=500, height=3, name="file_container", autopos = "left", autosize = true};
@@ -82,7 +85,7 @@ function initGUI()
 	end
 	
 	GROUP_OPTIMIZE = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_OPTIMIZE:hide();
-	local optimize = GuiElement:new{x=0,y=0,width=600,height=600,parent=GROUP_OPTIMIZE, text=""};
+	local optimize = GuiElement:new{x=0,y=0,width=800,height=600,parent=GROUP_OPTIMIZE, text=""};
 	function optimize:onUpdate()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
@@ -261,7 +264,7 @@ function updatePatternGUI( song )
 		
 		local amount;
 		if (self.channel == "noise" and ptrn.noiseduration ~= 0) then
-			amount = 1+#notes * ( ptrn.duration / ptrn.noiseduration )
+			amount = (1+#notes * ( ptrn.duration / ptrn.noiseduration ))
 		else
 			amount = 1+#notes;
 		end
@@ -296,7 +299,9 @@ function updatePatternGUI( song )
 		local p2 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE2, song = song.songindex, pattern = i, channel = "pulse2"};
 		local p1 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE1, song = song.songindex, pattern = i, channel = "pulse1"};
 		local tr = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_TRI,    song = song.songindex, pattern = i, channel = "tri"};
-		local no = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_NOISE,  song = song.songindex, pattern = i, channel = "noise"};
+		if song.hasNoise then
+			local no = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_NOISE,  song = song.songindex, pattern = i, channel = "noise"};
+		end
 	end
 end
 

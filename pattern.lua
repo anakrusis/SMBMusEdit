@@ -59,7 +59,6 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 	
 	-- for now it's just finding the nearest tempo value in whatever direction specified (increasing or decreasing)
 	local nearestdiff = 100000; local ind;
-	
 	for i = self.tempo, self.tempo+7 do
 	
 		local ctv = RHYTHM_TABLE[i]; -- current tempo value
@@ -73,6 +72,7 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 	newdur = RHYTHM_TABLE[ind];
 	if not newdur then return; end 
 	
+	-- Pulse 1 ( and noise, when that gets going) have rhythm values on every byte, simpler to deal with
 	if (channel == "pulse1") then
 		local pitch = bitwise.band(rom:get( existingnote.rom_index ), 0x3e); -- 0011 1110
 		local newrhythm = ind - self.tempo; print(string.format( "%02X", newrhythm ));
@@ -82,15 +82,32 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 		local rhythm = (fours_bit / 4) + (two_one_b * 0x40);
 		rom:put(existingnote.rom_index, pitch + rhythm);
 		
-		--newrhythm = 
-		
-		--local less_sig_bits = bitwise.band( val, 0xc0 );
-		--local more_sig_bit  = val % 2;
-		--current_rhythm_val  = 0x80 + ( more_sig_bit * 4 ) + ( less_sig_bits / 0x40 );
+	-- The other channels have more complex rhythm handling
 	else
+		-- If a rhythm byte is immediately before this byte:
 		local previous = rom:get(existingnote.rom_index - 1);
 		if (previous >= 0x80 and previous <= 0x87) then
-			rom:put(existingnote.rom_index - 1, 0x80 + ind - self.tempo);
+			local previousnote = self:getNotes(channel)[ existingnote.noteindex - 1 ];
+			-- If there is a previous note and its duration will be equal to the prospective duration, we will remove the rhythm byte from the latter note
+			if (previousnote) then
+				print (previousnote.noteindex);
+				if previousnote.duration == newdur then
+				
+					strt = self:getStartIndex(channel);
+					-- last index, the index after which a new empty byte will be inserted
+					lastind = strt + self:getBytesAvailable(channel); 
+					table.remove( rom.data, existingnote.rom_index - 1 );
+					newbyte = Byte:new{ val = 0xff }
+					table.insert( rom.data, lastind, newbyte )
+				else	
+					rom:put(existingnote.rom_index - 1, 0x80 + ind - self.tempo);
+				end
+			else
+				rom:put(existingnote.rom_index - 1, 0x80 + ind - self.tempo);
+			end
+		else
+		
+			
 		end
 	end
 	
@@ -112,6 +129,7 @@ function Pattern:writePitch(midinote, existingnote, channel)
 	end
 	
 	if (not newval) then return; end
+	if newval ~= 04 then previewNote(newval); end
 	
 	local ind = existingnote.rom_index;
 	
@@ -122,7 +140,7 @@ function Pattern:writePitch(midinote, existingnote, channel)
 		
 		newval = rhythm + pitch;
 	end
-	
+
 	rom:put(ind, newval);
 	parseAllSongs();
 end
@@ -366,7 +384,7 @@ function Pattern:parseNotes(start_index, target_table)
 			
 		-- Notes proper
 		else
-			local n = Note:new{ rom_index = ind }
+			local n = Note:new{ rom_index = ind, noteindex = notecount }
 			n.duration = current_note_length;
 			n.starttime = duration;
 			n.val = val;
@@ -432,7 +450,7 @@ function Pattern:parseCompressedNotes( start_index, target_table )
 			
 			--print( "Length: " .. string.format( "%02X", current_note_length ));
 			
-			local n = Note:new{ rom_index = ind }
+			local n = Note:new{ rom_index = ind, noteindex = notecount }
 			n.duration = current_note_length;
 			n.starttime = duration;
 			

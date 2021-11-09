@@ -11,6 +11,7 @@ function piano_roll_untray(y)
 	return -((( y - DIVIDER_POS - ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 ) ) / PIANOROLL_ZOOMY ) + PIANOROLL_SCROLLY) + 60
 end
 
+-- maybe this could be renamed to pianoRollBackground or something, not sure
 function renderAvailableNotes( channel ) 
 	for i = 0, #NOTES do
 		local ind = i;
@@ -27,9 +28,11 @@ function renderAvailableNotes( channel )
 			local recty = pianoroll_tray( pitch );
 			local m = (pitch) % 12;
 			if ( m == 1 or m == 3 or m == 6 or m == 8 or m == 10 ) then
-				love.graphics.setColor( 0.00,0.00,0.00 );
+				love.graphics.setColor( 0.25,0.25,0.25 );
+				--love.graphics.setColor( 0.00,0.00,0.00 );
 			else 
-				love.graphics.setColor( 0.06,0.06,0.06 );
+				love.graphics.setColor( 0.33,0.33,0.33 );
+				--love.graphics.setColor( 0.06,0.06,0.06 );
 			end
 			love.graphics.rectangle( "fill", 0, recty, WINDOW_WIDTH, PIANOROLL_ZOOMY )
 			
@@ -52,10 +55,12 @@ function renderChannel( notes, color )
 		
 		if ( note.val ~= 04) then
 			love.graphics.rectangle( "fill", rectx, recty, rectwidth, PIANOROLL_ZOOMY )
+			love.graphics.setColor( 0,0,0 );
+			love.graphics.rectangle( "line", rectx, recty, rectwidth, PIANOROLL_ZOOMY )
 		end
 		
-		love.graphics.setColor( 0.5,0.5,0.5 );
-		love.graphics.line(rectx,DIVIDER_POS,rectx,WINDOW_HEIGHT);
+		--love.graphics.setColor( 0.5,0.5,0.5 );
+		--love.graphics.line(rectx,DIVIDER_POS,rectx,WINDOW_HEIGHT);
 	end
 	
 	local dur = songs[selectedSong].patterns[selectedPattern].duration;
@@ -69,7 +74,8 @@ function renderSidePiano()
 		
 		local m = (i) % 12;
 		if ( m == 1 or m == 3 or m == 6 or m == 8 or m == 10 ) then
-			love.graphics.setColor( 0.25,0.25,0.25 );
+			love.graphics.setColor( 0.10,0.10,0.10 );
+			--love.graphics.setColor( 0.25,0.25,0.25 );
 		else
 			love.graphics.setColor( 1,1,1 );
 		end

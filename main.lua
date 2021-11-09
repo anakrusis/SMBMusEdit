@@ -17,12 +17,13 @@ function love.load()
 	
 	playing = false; playpos = 0; songpos = 0; -- current tick in pattern
 	playingPattern = 0;
+	preview_playing = false; previewtick = 0; previewpitch = 0; -- preview note when placing down
 	
 	selectedChannel = "tri";
 	selectedPattern = 0;
 	selectedSong    = 0;
 	
-	love.window.setTitle("SMBMusEdit 0.1.0a")
+	love.window.setTitle("SMBMusEdit 0.1.0a pre")
 	success = love.window.setMode( 800, 600, {resizable=true, minwidth=800, minheight=600} )
 	font = love.graphics.newFont("zeldadxt.ttf", 24)
 	love.graphics.setFont(font)
@@ -190,11 +191,6 @@ function love.wheelmoved( x, y )
 end
 
 function love.update(dt)
-
-	if (playing) then
-		play();
-	end
-	
 	WINDOW_WIDTH, WINDOW_HEIGHT, flags = love.window.getMode();
 	
 	--local zeromark = ((0 - PIANOROLL_SCROLLX) * PIANOROLL_ZOOMX) + WINDOW_WIDTH / 2;
@@ -205,6 +201,13 @@ function love.update(dt)
 	
 	updateGUI();
 	frameCount = frameCount + 1;
+	
+	if (playing) then
+		play();
+	end
+	if (preview_playing) then
+		playPreview();
+	end
 end
 
 function errorText(text)
@@ -216,6 +219,44 @@ function selectSong(index)
 	selectedPattern = 0; selectedChannel = "pulse2";
 	parseAllSongs();
 	updatePatternGUI( songs[index] );
+end
+
+-- initialises the preview
+function previewNote(val)
+	-- TODO make sources accessible from table of keys
+	local source;
+	if selectedChannel == "pulse2" then
+		source = SRC_PULSE2;
+	elseif selectedChannel == "pulse1" then
+		source = SRC_PULSE1;
+	elseif selectedChannel == "tri" then
+		source = SRC_TRI;
+	end
+	if not source then return end
+	local freq = FREQ_TABLE[ val ];
+	if not freq then source:stop(); return end
+	
+	if (source == SRC_TRI) then
+		freq = freq / 2;
+	end
+	source:setPitch( freq / 130.8128 ); -- <- the frequency of the square wave sample im using right now
+	source:play();
+	preview_playing = true; previewtick = 20;
+end
+function playPreview()
+	if previewtick <= 1 then
+		local source;
+		if selectedChannel == "pulse2" then
+			source = SRC_PULSE2;
+		elseif selectedChannel == "pulse1" then
+			source = SRC_PULSE1;
+		elseif selectedChannel == "tri" then
+			source = SRC_TRI;
+		end
+		if not source then return end
+		source:stop(); preview_playing = false;
+	end
+	previewtick = previewtick - 1;
 end
 
 function play()
@@ -277,7 +318,7 @@ function love.draw()
 	local ptrn = songs[selectedSong].patterns[ selectedPattern ];
 	
 	-- background of the piano roll (red)
-	love.graphics.setColor( 0.12,0,0 );
+	love.graphics.setColor( 0.40,0.10,0.10 );
 	love.graphics.rectangle("fill",0,DIVIDER_POS,WINDOW_WIDTH,WINDOW_HEIGHT);
 	renderAvailableNotes( selectedChannel );
 	
