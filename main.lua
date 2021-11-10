@@ -75,7 +75,7 @@ function love.load()
 	
 	parseAllSongs();
 	
-	selectSong(1);
+	selectSong(16);
 end
 
 function parseAllSongs()
@@ -210,8 +210,14 @@ function love.update(dt)
 	end
 end
 
-function errorText(text)
-
+function popupText(text,color)
+	-- this is to prevent the animation from continuing to retrigger
+	if (text ~= popup_text or popup_timer <= 0) then
+		popup_start = -30;
+	end
+	popup_timer = 10 * #text; 
+	popup_text = text; 
+	popup_color = color;
 end
 
 function selectSong(index)
@@ -353,6 +359,19 @@ function love.draw()
 	love.graphics.setColor( 1,0,0 );
 	local linex = ((songpos - PATTERN_SCROLL) * PATTERN_ZOOMX) --+ WINDOW_WIDTH / 2;
 	love.graphics.line(linex,60,linex,DIVIDER_POS);
+	
+	if popup_timer > 0 then
+		local py = WINDOW_HEIGHT - 72 - 2*popup_start;
+		if (popup_timer < 30) then py = py + 2*( 30 - popup_timer ) end
+		
+		love.graphics.setColor( 0,0,0 );
+		love.graphics.rectangle("fill",0,py,WINDOW_WIDTH,py);
+		love.graphics.setColor( popup_color );
+		love.graphics.printf( popup_text, 0, py + 8, WINDOW_WIDTH, "center" );
+	
+		popup_timer = popup_timer - 1;
+		popup_start = math.min(0, popup_start + 1);
+	end
 end
 
 function initRhythmTables()

@@ -54,7 +54,6 @@ function renderChannel( notes, color )
 	local longestval = 0; local ind;
 	for i = ptrn.tempo, ptrn.tempo+7 do
 		local ctv = RHYTHM_TABLE[i]; -- current tempo value
-		print(ctv);
 		if (ctv > longestval and (ctv / 12) % 1 == 0) then
 			longestval = ctv; ind = i;
 		end

@@ -6,6 +6,9 @@ function initGUI()
 	OPTIMIZE_SCROLL   = 0;
 	DIVIDER_POS = 300; SIDE_PIANO_WIDTH = 128;
 	
+	-- text that shows up for errors and other info bits at the bottom
+	popup_timer = 0; popup_color = {}; popup_text = ""; popup_start = 0;
+	
 	NOTE_DRAGGING = nil;
 	
 	elements = {};

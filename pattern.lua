@@ -70,7 +70,17 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 		
 	end
 	newdur = RHYTHM_TABLE[ind];
-	if not newdur then return; end 
+	if not newdur then return; end
+	
+	-- (trying out a bit of a system here, not sure if it'll be good or not.)
+	-- The intent is that, if the logic should find a reason to cancel this action, no bytes will be changed yet
+	-- Only at the end when everything is confirmed to be ok'd will the bytes be written/inserted/removed
+	
+	-- prospective byte changes...
+	local addrs   = {}; local vals   = {};
+	-- prospective byte insertions...
+	local i_addrs = {}; local i_vals = {}; 
+	local removals = {};
 	
 	-- Pulse 1 ( and noise, when that gets going) have rhythm values on every byte, simpler to deal with
 	if (channel == "pulse1") then
@@ -90,7 +100,6 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 			local previousnote = self:getNotes(channel)[ existingnote.noteindex - 1 ];
 			-- If there is a previous note and its duration will be equal to the prospective duration, we will remove the rhythm byte from the latter note
 			if (previousnote) then
-				print (previousnote.noteindex);
 				if previousnote.duration == newdur then
 				
 					strt = self:getStartIndex(channel);
@@ -98,17 +107,46 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 					lastind = strt + self:getBytesAvailable(channel); 
 					table.remove( rom.data, existingnote.rom_index - 1 );
 					newbyte = Byte:new{ val = 0xff }
-					table.insert( rom.data, lastind, newbyte )
+					table.insert( rom.data, lastind - 1, newbyte )
 				else	
 					rom:put(existingnote.rom_index - 1, 0x80 + ind - self.tempo);
 				end
 			else
 				rom:put(existingnote.rom_index - 1, 0x80 + ind - self.tempo);
 			end
-		else
-		
 			
+		-- If there is no rhythm byte preceding this byte:
+		else
+			-- If there is a previous note and its duration will be equal to the prospective duration, do nothing
+			local previousnote = self:getNotes(channel)[ existingnote.noteindex - 1 ];
+			if (previousnote) then
+				if previousnote.duration == newdur then
+					return;
+				end
+			end
+			-- Otherwise, we will need a free byte to make a new rhythm byte
+			if self:getBytesAvailable(channel) > self:getBytesUsed(channel) then
+				strt = self:getStartIndex(channel);
+				-- last index, the index after which a new empty byte will be inserted
+				lastind = strt + self:getBytesAvailable(channel); 
+				table.remove( rom.data, lastind - 1 );
+				newbyte = Byte:new{ val = 0x80 + ind - self.tempo }
+				table.insert( rom.data, existingnote.rom_index -1, newbyte )
+			else
+				popupText("Not enough bytes in this channel to change rhythm!\nEdit>Optimize to allocate unused bytes!", {1,0,0});
+			end
 		end
+		
+		-- for i = 1, #addrs do
+			-- rom:put(addrs[i],vals[i]);
+		-- end
+		-- for i = 1, #i_addrs do
+			-- newbyte = Byte:new{ val = i_vals[i] }
+			-- table.insert( rom.data, i_addrs[i], newbyte )
+		-- end
+		-- for i = 1, #removals do
+			-- table.remove( rom.data, removals[i] );
+		-- end
 	end
 	
 	parseAllSongs();
@@ -128,7 +166,10 @@ function Pattern:writePitch(midinote, existingnote, channel)
 		newval = 04;
 	end
 	
-	if (not newval) then return; end
+	if (not newval) then
+		popupText("Note not available!", {1,0,0});
+		return; 
+	end
 	if newval ~= 04 then previewNote(newval); end
 	
 	local ind = existingnote.rom_index;
