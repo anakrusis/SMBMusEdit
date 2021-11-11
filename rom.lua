@@ -59,6 +59,31 @@ function ROM:findNextUnusedUnqueuedIndex(song,ptrn,chnl)
 	return false;
 end
 
+function ROM:commitMarkers()
+	local DATA_START = 0x79C8;
+	local DATA_END   = 0x7F0F;
+	ind = DATA_START;
+	while ind <= DATA_END do
+		local cb = self.data[ind];
+		if cb.insert_before then
+			local newbyte = Byte:new{ val = cb.insert_before }
+			table.insert( rom.data, ind - 1, newbyte )
+			cb.insert_before = nil;
+			ind = ind + 1;
+		end
+		if cb.insert_after then
+			local newbyte = Byte:new{ val = cb.insert_after }
+			table.insert( rom.data, ind, newbyte )
+			cb.insert_after = nil;
+		end
+		if cb.delete then
+			table.remove( self.data, ind );
+			ind = ind - 1;
+		end
+		ind = ind + 1;
+	end
+end
+
 function ROM:export(path)
 	local output = ""
 	local file = io.open(path, "wb")
@@ -99,6 +124,11 @@ Byte = {
 	song_claims = {},
 	ptrn_claims = {},
 	chnl_claims = {},
+	
+	-- These are temporary markers for editing which can be committed into effect, or cleared if the action is cancelled
+	delete        = false,
+	insert_before = nil,
+	insert_after  = nil,
 }
 
 function Byte:new(o)
