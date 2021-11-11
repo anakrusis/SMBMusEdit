@@ -93,24 +93,26 @@ function initGUI()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
 		
-		local cbinfo = "Byte Addr.: $";
-		local rw = 32; local rh = 16;
-		local x = math.floor((love.mouse.getX() - 320 - self.dispx) / rw); 
+		local cbinfo = "";
+		local rw = 24; local rh = 16; local rxs = 400;
+		local x = math.floor((love.mouse.getX() - rxs - self.dispx) / rw); 
 		local y = math.floor((love.mouse.getY() + OPTIMIZE_SCROLL - self.dispy) / rh)
 		local ind = 0x79c0 + ( 16 * y ) + x;
 		local cb = rom.data[ind];
 		
-		cbinfo = cbinfo .. string.format("%04X", ind)
-		cbinfo = cbinfo .. "\nValue: " .. string.format("%02X", cb.val);
-		
-		for i = 1, #cb.song_claims do
-			local song = songs[ cb.song_claims[i] ];
-			local ptrn = song.patterns[ cb.ptrn_claims[i] ];
-			local chnl = cb.chnl_claims[i];
-			cbinfo = cbinfo .. "\n" .. ptrn:getName() .. " " .. chnl;
+		if x >= 0 and x < 16 then
+			cbinfo = cbinfo .. "Byte Addr.: $" .. string.format("%04X", ind)
+			cbinfo = cbinfo .. "\nValue: " .. string.format("%02X", cb.val);
+			
+			for i = 1, #cb.song_claims do
+				local song = songs[ cb.song_claims[i] ];
+				local ptrn = song.patterns[ cb.ptrn_claims[i] ];
+				local chnl = cb.chnl_claims[i];
+				cbinfo = cbinfo .. "\n" .. ptrn:getName() .. " " .. chnl;
+			end
+			cbinfo = cbinfo .. "\n\n";
 		end
 		
-		cbinfo = cbinfo .. "\n\n";
 		self.text = {
 			{1,1,1}, 
 			"Current Pattern:\n" ..  song.name .. " #" .. ptrn.patternindex .. "\n\n",
@@ -119,11 +121,11 @@ function initGUI()
 			CHANNEL_COLORS["pulse1"],
 			"Pulse 1: $" ..  string.format("%02X", ptrn.pulse1_start_index ) .. "\n",
 			CHANNEL_COLORS["tri"],
-			"Tri:     $" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n\n",
+			"Tri:     $" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n",
 			{1,1,1},
-			cbinfo,
+			"\n" .. cbinfo,
 			{1,1,1},
-			"The 'Allocate\nUnused Bytes' button\nwill allocate space\nto the pattern and \nchannel currently\nopened in the piano\nroll.",
+			"Scroll to view more\nof the byte viewer --->\n\nThe 'Allocate Unused\nBytes' button will\nallocate space to the\npattern and channel\ncurrently opened in the\npiano roll.",
 		}
 		if (ptrn.hasNoise) then
 			table.insert(self.text, 9, CHANNEL_COLORS["noise"]);
@@ -139,10 +141,10 @@ function initGUI()
 		local DATA_END   = 0x7F0F;
 		
 		for i = DATA_START, DATA_END do
+			-- rectangle width, height, and x start
+			local rw = 24; local rh = 16; local rxs = 400;
 			
-			local rw = 32; local rh = 16;
-			
-			local rectx = self.dispx + 320 + ( i % 16 ) * rw
+			local rectx = self.dispx + rxs + ( i % 16 ) * rw
 			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * rh) - OPTIMIZE_SCROLL; 
 			local b = rom.data[i] -- byte
 			if (b:hasChannelClaim("pulse2")) then

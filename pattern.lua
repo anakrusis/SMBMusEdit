@@ -99,6 +99,8 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 		-- If a rhythm byte is immediately before this byte:
 		local previous = rom:get(existingnote.rom_index - 1);
 		if (previous >= 0x80 and previous <= 0x87) then
+		
+			--print ("has rhythm byte");
 			local previousnote = self:getNotes(channel)[ existingnote.noteindex - 1 ];
 			-- If there is a previous note and its duration will be equal to the prospective duration, we will remove the rhythm byte from the latter note
 			-- and we will add an empty, unused byte at the end of this channels data
@@ -120,10 +122,12 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 			
 		-- If there is no rhythm byte preceding this byte:
 		else
+			--print ("no rhythm byte");
 			-- If there is a previous note and its duration will be equal to the prospective duration, do nothing
 			local previousnote = self:getNotes(channel)[ existingnote.noteindex - 1 ];
 			if (previousnote) then
 				if previousnote.duration == NEWDUR then
+					--print("already equal");
 					return;
 				end
 			end
@@ -134,23 +138,63 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 				lastind = strt + self:getBytesAvailable(channel); 
 				
 				table.insert( removals, lastind - 1 );
-				table.insert( i_addrs , existingnote.rom_index - 1 );
+				table.insert( i_addrs , existingnote.rom_index );
 				table.insert( i_vals  , NEW_RHYTHM );
 			else
-				popupText("Not enough bytes in this channel to change rhythm!\nEdit>Optimize to allocate unused bytes!", {1,0,0});
+				popupText("Not enough free bytes in this channel to change rhythm!\nEdit > Optimize to allocate unused bytes!", {1,1,1}); return;
 			end
 		end
 		
-		-- now it must iterate through the bytes after this one that was just changed (existingnote.rom_index):
+		--songs[self.songindex]:parse();
+		
+		-- now it must iterate through the notes after this one that was just changed:
 		-- a note that comes after without a rhythm byte, if its duration is different, a rhythm byte must be inserted
 		-- rhythm bytes that will be the same as this prospective rhythm can be removed (they are redundant)
 		-- and if we find a rhythm byte that is different than the prospective rhythm than we can stop iterating
-		for i = existingnote.rom_index, existingnote.rom_index + 0xff do
-			local cv = rom.data[i].val -- current val (of byte)
-			if (cv >= 0x80 and cv <= 0x87) then
+		
+		local notes = self:getNotes(channel);
+		local note = notes[ existingnote.noteindex + 1 ];
+		local previousbyte = rom.data[note.rom_index - 1].val;
+		
+		-- The note has a rhythm byte before it:
+		if (previousbyte >= 0x80 and previousbyte <= 0x87) then
+			-- if a different rhythm, then we are done iterating
+			if (previousbyte ~= NEW_RHYTHM) then
 				
+			-- otherwise, it is the same rhythm byte value, so we will remove it
+			else
+				print("ahead value removed");
+				strt = self:getStartIndex(channel);
+				lastind = strt + self:getBytesAvailable(channel); 
+				table.insert( removals, note.rom_index - 1 );
+				table.insert( i_addrs , lastind - 1 );
+				table.insert( i_vals  , 0xff );
 			end
-		end
+			
+		-- The note lacks a rhythm byte before it: will need to place an extra byte here
+		else
+			if self:getBytesAvailable(channel) > self:getBytesUsed(channel) then
+				strt = self:getStartIndex(channel);
+				lastind = strt + self:getBytesAvailable(channel); 
+				
+				table.insert( removals, lastind - 1 );
+				table.insert( i_addrs , note.rom_index );
+				table.insert( i_vals  , 0x80 );
+			else
+				popupText("Not enough free bytes in this channel to change rhythm!\nEdit > Optimize to allocate unused bytes!", {1,1,1}); return;
+			end
+		end	
+		
+		-- for i = existingnote.rom_index, existingnote.rom_index + 0xff do
+			-- local cv = rom.data[i].val -- current val (of byte)
+			-- -- Rhythm bytes:
+			-- if (cv >= 0x80 and cv <= 0x87) then
+			
+			-- -- Non rhythm bytes:
+			-- else
+			
+			-- end
+		-- end
 		
 		-- finally, if it made it this far, all the prospective byte changes will be put into action
 		for i = 1, #addrs do
@@ -164,7 +208,7 @@ function Pattern:changeRhythm( tick, existingnote, channel )
 			table.insert( rom.data, i_addrs[i], newbyte )
 		end
 		
-		-- TODO: adjustInternalPointers for songs that have pointers pointing within this channel
+		-- TODO: adjust pointers for songs that point to a place in this channel
 		-- I mention this because the "silence" tracks point all channels to the final #$00 of the pulse 2 channel of the overworlds second pattern.
 		-- these tracks break when the position of that 00 is moved, and it also causes the byte to not be seen as unused
 	end
@@ -210,7 +254,10 @@ function Pattern:allocateUnusedBytes(chnl)
 	local ind, lastind, strt, newbyte;
 
 	ind = rom:findNextUnusedUnqueuedIndex(self.songindex, self.patternindex, chnl);
-	if not ind then return false; end
+	if not ind then 
+		popupText("No more unused bytes to queue up!\nYou can shorten patterns to free up bytes.", {1,1,1});
+		return false; 
+	end
 	
 	local oldsongind; local oldptrnind;
 	-- need to know what song "ind" is queued up after... (technically doesn't matter which, if multiple songs/patterns share the byte)
