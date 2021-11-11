@@ -127,7 +127,7 @@ function love.mousepressed( x,y,button )
 			if (not existingnote) then return end
 			-- clicking the right edge of the note: initates dragging for rhythm changing
 			if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
-				DRAGGING_NOTE = existingnote;
+				DRAGGING_NOTE = existingnote.noteindex;
 				
 			-- otherwise places/removes notes
 			else
@@ -375,11 +375,13 @@ function love.draw()
 end
 
 function initRhythmTables()
-	RHYTHM_TABLE = {};
+	RHYTHM_TABLE = {}; 
+	RHYTHM_VALS = {};
 	RHYTHM_STRT_INDEX = 0x7F76;
 	
 	for i = 0, 0x2f do
 		RHYTHM_TABLE[i] = rom:get( RHYTHM_STRT_INDEX + i );
+		RHYTHM_VALS[ RHYTHM_TABLE[i] ] = i
 	end
 end
 
