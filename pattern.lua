@@ -72,8 +72,11 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 	end
 	local NEWDUR = RHYTHM_TABLE[ind];
 	if not NEWDUR then return; end
+	if existingnote.duration == NEWDUR then return; end
 	
-	change_vals = {}; change_addrs = {};
+	local change_vals = {}; local change_addrs = {};
+	-- how many bytes will this operation use up? (always 0 for the compressed channels pulse1+noise)
+	local bytecost = 0;
 	
 	-- Pulse 1 ( and noise, when that gets going) have rhythm values on every byte, simpler to deal with
 	if (channel == "pulse1") then
@@ -96,13 +99,56 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		-- this should simplify the logic a lot, i think...?
 	
 		local NEW_RHYTHM = 0x80 + ind - self.tempo;
-		local previous = rom:get(existingnote.rom_index - 1);
-		if (previous >= 0x80 and previous <= 0x87) then
-			table.insert(change_vals,   NEW_RHYTHM);
-			table.insert(change_addrss, existingnote.rom_index - 1);
-			--rom:put(existingnote.rom_index - 1, NEW_RHYTHM);
-		else
 		
+		currbyte = rom.data[ existingnote.rom_index ]; 
+		
+		local prevbyte = rom.data[ existingnote.rom_index - 1 ];
+		local prevval  = prevbyte.val;
+		-- Rhythm byte:
+		if (prevval >= 0x80 and prevval <= 0x87) then
+			table.insert(change_vals,   NEW_RHYTHM);
+			table.insert(change_addrs, existingnote.rom_index - 1);
+		-- Non-rhythm byte:
+		else
+			print("inserting rhythm byte before");
+			strt = self:getStartIndex(channel);
+			bytecost = bytecost + 1;
+			lastind = strt + self:getBytesUsed(channel) + bytecost; 
+			
+			currbyte.insert_before = NEW_RHYTHM;
+			print("deleting " .. string.format( "%02X",rom.data[lastind - 1].val));
+			rom.data[lastind - 1].delete = true;
+		end
+		
+		local nextbyte = rom.data[ existingnote.rom_index + 1 ];
+		local nextval  = nextbyte.val;
+		local nextnote = self:getNotes(channel)[ existingnote.noteindex +  1 ];
+		-- special handling for the last note of the pattern
+		if not nextnote then
+			
+		-- Rhythm byte:
+		elseif (nextval >= 0x80 and nextval <= 0x87) then
+
+		-- Non-rhythm byte:
+		-- a rhythm byte will be inserted after.
+		-- to figure out what rhythm value it will hold, we must assess the duration of the note
+		else
+			strt = self:getStartIndex(channel);
+			bytecost = bytecost + 1;
+			lastind = strt + self:getBytesUsed(channel) + bytecost; 
+			
+			local cr = nil; -- currentrhythm
+			for q = self.tempo, self.tempo+7 do
+				if RHYTHM_TABLE[q] == nextnote.duration then
+					cr = q;
+				end
+			end
+			local rhythmAfter = 0x80 + cr - self.tempo;
+			
+			currbyte.insert_after = rhythmAfter;
+			print("inserting after " .. string.format( "%02X",rhythmAfter));
+			print("deleting " .. string.format( "%02X",rom.data[lastind - 1].val));
+			rom.data[lastind - 1].delete = true;
 		end
 		
 		-- local NEW_RHYTHM = 0x80 + ind - self.tempo;
@@ -239,21 +285,18 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 			-- -- end
 		-- -- end
 		
-		-- -- finally, if it made it this far, all the prospective byte changes will be put into action
-		-- for i = 1, #addrs do
-			-- rom:put(addrs[i],vals[i]);
-		-- end
-		-- for i = 1, #removals do
-			-- table.remove( rom.data, removals[i] );
-		-- end
-		-- for i = 1, #i_addrs do
-			-- newbyte = Byte:new{ val = i_vals[i] }
-			-- table.insert( rom.data, i_addrs[i], newbyte )
-		-- end
-		
 		-- TODO: adjust pointers for songs that point to a place in this channel
 		-- I mention this because the "silence" tracks point all channels to the final #$00 of the pulse 2 channel of the overworlds second pattern.
 		-- these tracks break when the position of that 00 is moved, and it also causes the byte to not be seen as unused
+	end
+	
+	if bytecost > self:getBytesAvailable(channel) - self:getBytesUsed(channel) then
+		popupText("Not enough free bytes in this channel to change rhythm!\nEdit > Optimize to allocate unused bytes!", {1,1,1});
+		
+		-- Byte markers MUST be cleared if cancelling an action
+		-- (otherwise they will unintentionally take effect next action)
+		rom:clearMarkers();
+		return;
 	end
 	
 	for i = 1, #change_addrs do

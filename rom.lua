@@ -59,6 +59,20 @@ function ROM:findNextUnusedUnqueuedIndex(song,ptrn,chnl)
 	return false;
 end
 
+-- The following two functions provide markers for shifting bytes without having to worry about changing indices and stuff. 
+-- actions dealing with shifting indices do not have to keep track; it will be kept track of here.
+
+function ROM:clearMarkers()
+	local DATA_START = 0x79C8;
+	local DATA_END   = 0x7F0F;
+	for i = DATA_START, DATA_END do
+		local cb = self.data[i];
+		cb.insert_before = nil;
+		cb.insert_after  = nil;
+		cb.delete        = false;
+	end
+end
+
 function ROM:commitMarkers()
 	local DATA_START = 0x79C8;
 	local DATA_END   = 0x7F0F;
@@ -67,16 +81,17 @@ function ROM:commitMarkers()
 		local cb = self.data[ind];
 		if cb.insert_before then
 			local newbyte = Byte:new{ val = cb.insert_before }
-			table.insert( rom.data, ind - 1, newbyte )
+			table.insert( rom.data, ind, newbyte )
 			cb.insert_before = nil;
 			ind = ind + 1;
 		end
 		if cb.insert_after then
 			local newbyte = Byte:new{ val = cb.insert_after }
-			table.insert( rom.data, ind, newbyte )
+			table.insert( rom.data, ind + 1, newbyte )
 			cb.insert_after = nil;
 		end
 		if cb.delete then
+			cb.delete = false;
 			table.remove( self.data, ind );
 			ind = ind - 1;
 		end

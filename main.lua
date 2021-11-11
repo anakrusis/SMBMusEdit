@@ -24,7 +24,7 @@ function love.load()
 	selectedSong    = 0;
 	
 	love.window.setTitle("SMBMusEdit 0.1.0a pre")
-	success = love.window.setMode( 800, 600, {resizable=true, minwidth=800, minheight=600} )
+	success = love.window.setMode( 800, 800, {resizable=true, minwidth=800, minheight=600} )
 	font = love.graphics.newFont("zeldadxt.ttf", 24)
 	love.graphics.setFont(font)
 	frameCount = 0; -- just how many ticks the window has been open
@@ -376,12 +376,10 @@ end
 
 function initRhythmTables()
 	RHYTHM_TABLE = {}; 
-	RHYTHM_VALS = {};
 	RHYTHM_STRT_INDEX = 0x7F76;
 	
 	for i = 0, 0x2f do
 		RHYTHM_TABLE[i] = rom:get( RHYTHM_STRT_INDEX + i );
-		RHYTHM_VALS[ RHYTHM_TABLE[i] ] = i
 	end
 end
 
