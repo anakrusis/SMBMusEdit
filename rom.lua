@@ -81,14 +81,17 @@ function ROM:commitMarkers()
 		local cb = self.data[ind];
 		if cb.insert_before then
 			local newbyte = Byte:new{ val = cb.insert_before }
-			table.insert( rom.data, ind, newbyte )
+			table.insert( self.data, ind, newbyte )
 			cb.insert_before = nil;
 			ind = ind + 1;
 		end
 		if cb.insert_after then
 			local newbyte = Byte:new{ val = cb.insert_after }
-			table.insert( rom.data, ind + 1, newbyte )
+			table.insert( self.data, ind + 1, newbyte )
 			cb.insert_after = nil;
+		end
+		if cb.change then
+			self.data[ind].val = cb.change;
 		end
 		if cb.delete then
 			cb.delete = false;
@@ -96,6 +99,26 @@ function ROM:commitMarkers()
 			ind = ind - 1;
 		end
 		ind = ind + 1;
+	end
+end
+
+-- doesnt deep copy the claims tables (yet)(might not need to)
+function ROM:deepcopy(oldrom)
+	self.data = {};
+	for i = 0, table.getn(oldrom.data) do
+		local ob = oldrom.data[i];
+		local cb = Byte:new{ 
+			val           = ob.val,
+			insert_after  = ob.insert_after,
+			insert_before = ob.insert_before,
+			delete        = ob.delete,
+			change        = ob.change,
+			
+			song_claims   = ob.song_claims,
+			ptrn_claims   = ob.ptrn_claims,
+			chnl_claims   = ob.chnl_claims
+		}
+		self.data[i] = cb;
 	end
 end
 
@@ -141,6 +164,7 @@ Byte = {
 	chnl_claims = {},
 	
 	-- These are temporary markers for editing which can be committed into effect, or cleared if the action is cancelled
+	change        = nil,
 	delete        = false,
 	insert_before = nil,
 	insert_after  = nil,
