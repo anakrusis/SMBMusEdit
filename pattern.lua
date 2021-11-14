@@ -165,48 +165,35 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		
 	-- PASS 2:
 		-- this is a cleanup routine that passes through and removes redundant or unused rhythm values from the whole channel's data
+		-- It also counts the length of the new used portion of notes
+		local newptrnlen = 0;
 		local lastrhythm = 0;
 		for i = self:getStartIndex(channel), self:getStartIndex(channel) + self:getBytesUsed(channel) + bytecost do
 			local cb = temprom.data[i];
-			-- we must'n't go outside the range of this channel's bytes
-			--if not cb:hasClaim(self.songindex, self.patternindex, channel) then break end
 			local cv = cb.val -- current val (of byte)
-			
-			-- if (cb.insert_before == lastrhythm and cb.insert_before >= 0x80 and cb.insert_before <= 0x87) then
-				-- lastrhythm = cb.insert_before;
-				-- cb.insert_before = nil;
-				-- strt = self:getStartIndex(channel);
-				-- lastind = strt + self:getBytesUsed(channel) + bytecost; 
-				-- rom.data[lastind - 1].delete = false;
-				-- bytecost = bytecost - 1;
-			-- end
-			--print(string.format("%02X",cv));
-			
-			-- if (cv >= 0x80 and cv <= 0x87) then
-				-- -- redundancy detection: will prevent rhythm bytes from being inserted if they are already present before
-				-- if lastrhythm == cv then
+			--print(string.format("%02X",cv));	
+			if (cv >= 0x80 and cv <= 0x87) then
+				-- redundancy detection: will prevent rhythm bytes from being inserted if they are already present before
+				if lastrhythm == cv then
 					
-					-- print("redundant rhythm removed " .. string.format( "%02X",cv));
+					print("redundant rhythm removed " .. string.format( "%02X",cv));
 					
-					-- cb.delete = true;
-					-- strt = self:getStartIndex(channel);
-					-- lastind = strt + self:getBytesUsed(channel)
-					-- temprom.data[lastind].insert_after = 0xff;
+					cb.delete = true;
+					strt = self:getStartIndex(channel);
+					lastind = strt + self:getBytesUsed(channel)
+					temprom.data[lastind].insert_after = 0xff;
 			
-					-- bytecost = bytecost - 1;
-				-- end
-				-- lastrhythm = cv;
-			-- end
-			
-			-- if (cb.insert_after == lastrhythm and cb.insert_after >= 0x80 and cb.insert_after <= 0x87) then
-				-- lastrhythm = cb.insert_after;
-				-- cb.insert_after = nil;
-				-- strt = self:getStartIndex(channel);
-				-- lastind = strt + self:getBytesUsed(channel) + bytecost; 
-				-- rom.data[lastind - 1].delete = false;
-				-- bytecost = bytecost - 1;
-			-- end
+					bytecost = bytecost - 1;
+				end
+				lastrhythm = cv;
+			else
+				newptrnlen = newptrnlen + RHYTHM_TABLE[ (0x80 - lastrhythm) + self.tempo ];
+			end
 		end
+		print("new length: " .. newptrnlen);
+		
+		-- TODO: pattern length changing such that garbage data will be read: must be prevented lolol
+		-- (Can be considered like overlap protection)
 		
 		-- TODO: adjust pointers for songs that point to a place in this channel
 		-- I mention this because the "silence" tracks point all channels to the final #$00 of the pulse 2 channel of the overworlds second pattern.
@@ -314,20 +301,22 @@ function Pattern:allocateUnusedBytes(chnl)
 					rom:putWord(hs, out - 1);
 				end
 				
+				p:adjustInternalPointers(lastind, ind);
+				
 				seen_hdr_strts[hs] = true;
 			end
 		end
 	end
 	
-	self:adjustInternalPointers(lastind, ind);
+	-- self:adjustInternalPointers(lastind, ind);
 	
-	-- if transferring within the same ptrn, the pointers are only done on that one ptrn once.
-	-- otherwise, the internal pointers of boths ptrn must be fixed
-	if (oldsongind ~= self.songindex and oldptrnind ~= self.patternindex) then
-		local oldsong = songs[oldsongind];
-		local oldptrn = oldsong.patterns[oldptrnind];
-		oldptrn:adjustInternalPointers(lastind, ind);
-	end
+	-- -- if transferring within the same ptrn, the pointers are only done on that one ptrn once.
+	-- -- otherwise, the internal pointers of boths ptrn must be fixed
+	-- if (oldsongind ~= self.songindex and oldptrnind ~= self.patternindex) then
+		-- local oldsong = songs[oldsongind];
+		-- local oldptrn = oldsong.patterns[oldptrnind];
+		-- oldptrn:adjustInternalPointers(lastind, ind);
+	-- end
 	
 	parseAllSongs();
 end
@@ -339,6 +328,7 @@ function Pattern:adjustInternalPointers(ip, rp)
 	if ( self.hasNoise ) then
 		greatest_start = math.max( greatest_start, self.noise_start_index );
 	end
+	--print( self:getName() .. " " .. string.format( "%02X",greatest_start))
 	
 	local out;
 	local tripos = self.header_start_index + 3;
@@ -347,8 +337,8 @@ function Pattern:adjustInternalPointers(ip, rp)
 	
 	-- checking that the changed indices are truly internal to this patterns data
 	-- first at the insertion point:
-	if self.pulse2_start_index <= ip and ip <= greatest_start then
-		
+	if self.pulse2_start_index < ip and ip <= greatest_start then
+		print( self:getName() .. " " .. "contains insert point")
 		if self.tri_start_index >= ip then
 			out = rom:get( tripos );
 			rom:put( tripos, out + 1 );
@@ -365,8 +355,8 @@ function Pattern:adjustInternalPointers(ip, rp)
 		end
 	end
 	-- and at the removal point:
-	if self.pulse2_start_index <= rp and rp <= greatest_start then
-		
+	if self.pulse2_start_index < rp and rp <= greatest_start then
+		print( self:getName() .. " " .. "contains remove point")
 		if self.tri_start_index >= rp then
 			out = rom:get( tripos );
 			rom:put( tripos, out - 1 );

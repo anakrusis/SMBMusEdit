@@ -55,7 +55,7 @@ function love.load()
 	s = Song:new{ name = "Silence",
 	ptr_start_index = 0x7924, hasNoise = false, loop = false };
 	s = Song:new{ name = "(Unknown)",
-	ptr_start_index = 0x7925, hasNoise = false, loop = false };
+	ptr_start_index = 0x7925, hasNoise = true, loop = false };
 	s = Song:new{ name = "Underwater",
 	ptr_start_index = 0x7926, hasNoise = true,  loop = true };	
 	s = Song:new{ name = "Underground",

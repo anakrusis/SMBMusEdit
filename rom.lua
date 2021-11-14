@@ -92,6 +92,7 @@ function ROM:commitMarkers()
 		end
 		if cb.change then
 			self.data[ind].val = cb.change;
+			cb.change = nil;
 		end
 		if cb.delete then
 			cb.delete = false;
