@@ -73,9 +73,11 @@ function ROM:clearMarkers()
 	end
 end
 
-function ROM:commitMarkers()
-	local DATA_START = 0x79C8;
-	local DATA_END   = 0x7F0F;
+function ROM:commitMarkers(startind, endind)
+	local DATA_START; local DATA_END;
+	if startind then DATA_START = startind; else DATA_START = 0x79C8; end
+	if endind   then DATA_END   = endind;   else DATA_END   = 0x7F0F; end
+	
 	ind = DATA_START;
 	while ind <= DATA_END do
 		local cb = self.data[ind];
@@ -104,9 +106,13 @@ function ROM:commitMarkers()
 end
 
 -- doesnt deep copy the claims tables (yet)(might not need to)
-function ROM:deepcopy(oldrom)
-	self.data = {};
-	for i = 0, table.getn(oldrom.data) do
+function ROM:deepcopy(oldrom, startind, endind)
+	--self.data = {};
+	
+	if startind then DATA_START = startind; else DATA_START = 0; end
+	if endind   then DATA_END   = endind;   else DATA_END   = table.getn(oldrom.data); end
+	
+	for i = DATA_START, DATA_END do
 		local ob = oldrom.data[i];
 		local cb = Byte:new{ 
 			val           = ob.val,
@@ -180,6 +186,9 @@ function Byte:new(o)
 	o.ptrn_claims = {};
 	o.chnl_claims = {};
 	return o
+end
+
+function Byte:commitMarkers()
 end
 
 -- if this byte is claimed by a specific song, pattern and channel

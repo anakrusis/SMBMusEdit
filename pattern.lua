@@ -82,7 +82,7 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 	local bytecost = 0;
 	
 	-- Pulse 1 ( and noise, when that gets going) have rhythm values on every byte, simpler to deal with
-	if (channel == "pulse1") then
+	if (channel == "pulse1" or channel == "noise") then
 		local pitch = bitwise.band(rom:get( existingnote.rom_index ), 0x3e); -- 0011 1110
 		local newrhythm = ind - self.tempo; 
 		local fours_bit = bitwise.band( newrhythm, 0x04 );
@@ -96,7 +96,7 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		
 		-- TODO fix the invalid notes on pulse1
 		
-		temprom:commitMarkers();
+		temprom:commitMarkers( existingnote.rom_index, existingnote.rom_index );
 		
 	-- The other channels have more complex rhythm handling
 	else
@@ -115,19 +115,19 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		local prevval  = prevbyte.val;
 		-- Rhythm byte:
 		if (prevval >= 0x80 and prevval <= 0x87) then
-			print("changing rhythm byte to " .. string.format( "%02X", NEW_RHYTHM));
+			--print("changing rhythm byte to " .. string.format( "%02X", NEW_RHYTHM));
 			prevbyte.change = NEW_RHYTHM;
 			
 		-- Non-rhythm byte:
 		else
-			print("inserting rhythm byte before");
+			--print("inserting rhythm byte before");
 			strt = self:getStartIndex(channel);
 			bytecost = bytecost + 1;
 			lastind = strt + self:getBytesUsed(channel) + bytecost; 
 			
 			currbyte.insert_before = NEW_RHYTHM;
-			print("deleting " .. string.format( "%02X",temprom.data[lastind - 1].val));
-			temprom.data[lastind - 1].delete = true;
+			--print("deleting " .. string.format( "%02X",temprom.data[lastind - 1].val));
+			--temprom.data[lastind - 1].delete = true;
 		end
 		
 		local nextbyte = temprom.data[ existingnote.rom_index + 1 ];
@@ -156,9 +156,9 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 			local rhythmAfter = 0x80 + cr - self.tempo;
 			
 			currbyte.insert_after = rhythmAfter;
-			print("inserting after " .. string.format( "%02X",rhythmAfter));
-			print("deleting " .. string.format( "%02X",temprom.data[lastind - 1].val));
-			temprom.data[lastind - 1].delete = true;
+			--print("inserting after " .. string.format( "%02X",rhythmAfter));
+			--print("deleting " .. string.format( "%02X",temprom.data[lastind - 1].val));
+			--temprom.data[lastind - 1].delete = true;
 		end
 		
 		temprom:commitMarkers();
@@ -176,12 +176,12 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 				-- redundancy detection: will prevent rhythm bytes from being inserted if they are already present before
 				if lastrhythm == cv then
 					
-					print("redundant rhythm removed " .. string.format( "%02X",cv));
+					--print("redundant rhythm removed " .. string.format( "%02X",cv));
 					
 					cb.delete = true;
 					strt = self:getStartIndex(channel);
 					lastind = strt + self:getBytesUsed(channel)
-					temprom.data[lastind].insert_after = 0xff;
+					--temprom.data[lastind].insert_after = 0xff;
 			
 					bytecost = bytecost - 1;
 				end
@@ -190,7 +190,8 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 				newptrnlen = newptrnlen + RHYTHM_TABLE[ (0x80 - lastrhythm) + self.tempo ];
 			end
 		end
-		print("new length: " .. newptrnlen);
+		
+		temprom:commitMarkers();
 		
 		-- TODO: pattern length changing such that garbage data will be read: must be prevented lolol
 		-- (Can be considered like overlap protection)
@@ -208,9 +209,37 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		rom:clearMarkers();
 		return;
 	end
+	
+	for i = 0, math.abs(bytecost) - 1 do
+		if bytecost == 0 then break; end
+	
+		local strt = self:getStartIndex(channel);
+		local curind;
+		
+		-- positive bytecost: bytes will be removed from the end
+		if bytecost > 0 then
+			curind = strt + self:getBytesAvailable(channel) - i;
+			local cb = temprom.data[curind]
+			local cv = cb.val;
+			print(string.format( "%02X",cv) .. "removed at $" .. string.format( "%04X",curind) );
+			
+			cb.delete = true;
+			temprom:commitMarkers(curind,curind);
+			
+		-- negative bytecost: bytes will be appended at the end
+		else
+			curind = strt + self:getBytesUsed(channel) - 1
+			local cb = temprom.data[curind]
+			local cv = cb.val;
+			print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
+			
+			cb.insert_after = 0xff;
+			temprom:commitMarkers(curind,curind);
+		end
+	end
 
 	rom = temprom;
-	rom:commitMarkers();
+	--rom:commitMarkers();
 	parseAllSongs();
 end
 
@@ -525,7 +554,7 @@ function Pattern:parseCompressedNotes( start_index, target_table )
 		local val = rom:get(ind);
 		
 		if self.duration ~= nil and duration >= self.duration then
-			return;
+			return duration;
 		end
 		
 		-- Registering the byte for counting purposes
@@ -574,6 +603,8 @@ function Pattern:parseCompressedNotes( start_index, target_table )
 			notecount = notecount + 1;
 		end
 	end
+	
+	return duration;
 end
 
 -- Parses pattern, given a header start index ( hdr_strt_ind ) as an entry point

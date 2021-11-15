@@ -15,6 +15,10 @@ function love.load()
 	SRC_TRI = love.audio.newSource( "tri.wav", "static" );
 	SRC_TRI:setLooping(true);
 	
+	SRC_KICK = love.audio.newSource("kick.wav", "static");
+	SRC_CH   = love.audio.newSource("ch.wav", "static");
+	SRC_OH   = love.audio.newSource("oh.wav", "static");
+	
 	playing = false; playpos = 0; songpos = 0; -- current tick in pattern
 	playingPattern = 0;
 	preview_playing = false; previewtick = 0; previewpitch = 0; -- preview note when placing down
@@ -270,6 +274,7 @@ function play()
 	playChannel( ptrn.pulse2_notes, SRC_PULSE2 );
 	playChannel( ptrn.tri_notes,    SRC_TRI );
 	playChannel( ptrn.pulse1_notes, SRC_PULSE1 );
+	playChannel( ptrn.noise_notes,  SRC_KICK );
 	
 	if (playpos >= ptrn.duration) then 
 		if songs[selectedSong].loop then
@@ -291,22 +296,41 @@ function play()
 end
 
 function playChannel( notes, source )
+	local ptrn = songs[selectedSong].patterns[playingPattern];
 	if not notes[0] then return end
 	for i = 0, #notes do
 		local note = notes[i];
-		if note.starttime == playpos then
+		local pos = playpos;
+		-- noise playback loops
+		if source == SRC_KICK and ptrn.noiseduration < ptrn.duration then
+			pos = pos % ptrn.noiseduration;
+		end
+		if note.starttime == pos then
 			
 			if ( note.val == 04) then
 				source:stop();
 			else
-				local freq = FREQ_TABLE[ note.val ];
-				if not freq then source:stop(); return end
-				
-				if (source == SRC_TRI) then
-					freq = freq / 2;
+				-- special noise handling playback
+				if source == SRC_KICK then
+					if note.val == 0x10 then -- closed hat
+						SRC_CH:play();
+					elseif note.val == 0x20 then -- kick
+						source:play();
+					elseif note.val == 0x30 then -- open hat
+						SRC_OH:play();
+					else
+						return;
+					end
+				else
+					local freq = FREQ_TABLE[ note.val ];
+					if not freq then source:stop(); return end
+					
+					if (source == SRC_TRI) then
+						freq = freq / 2;
+					end
+					source:setPitch( freq / 130.8128 ); -- <- the frequency of the square wave sample im using right now
+					source:play();
 				end
-				source:setPitch( freq / 130.8128 ); -- <- the frequency of the square wave sample im using right now
-				source:play();
 			end
 		end
 	end
