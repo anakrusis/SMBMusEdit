@@ -186,10 +186,17 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 					bytecost = bytecost - 1;
 				end
 				lastrhythm = cv;
+				
+			elseif (cv == 0x00) then
+			
 			else
-				newptrnlen = newptrnlen + RHYTHM_TABLE[ (0x80 - lastrhythm) + self.tempo ];
+				local newrhythm = RHYTHM_TABLE[ (0x80 - lastrhythm) + self.tempo ];
+				--print( newrhythm );
+				newptrnlen = newptrnlen + newrhythm;
 			end
 		end
+		
+		--print ( "duration " .. self.duration .. "->" .. newptrnlen );
 		
 		temprom:commitMarkers();
 		
@@ -210,6 +217,11 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		return;
 	end
 	
+	print("bytecost: " .. bytecost);
+	
+	-- This part appends on or removes unused bytes in queue for this channel, if needed
+	-- this maintains the internal size of the pattern so other pointers dont have to be changed with every edit
+	
 	for i = 0, math.abs(bytecost) - 1 do
 		if bytecost == 0 then break; end
 	
@@ -218,7 +230,7 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		
 		-- positive bytecost: bytes will be removed from the end
 		if bytecost > 0 then
-			curind = strt + self:getBytesAvailable(channel) - i;
+			curind = strt + self:getBytesAvailable(channel) + (bytecost - 1) - i;
 			local cb = temprom.data[curind]
 			local cv = cb.val;
 			print(string.format( "%02X",cv) .. "removed at $" .. string.format( "%04X",curind) );
@@ -228,7 +240,7 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 			
 		-- negative bytecost: bytes will be appended at the end
 		else
-			curind = strt + self:getBytesUsed(channel) - 1
+			curind = strt + self:getBytesUsed(channel) + bytecost - 1;
 			local cb = temprom.data[curind]
 			local cv = cb.val;
 			print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
