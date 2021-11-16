@@ -49,19 +49,27 @@ function renderChannel( notes, color )
 	
 	-- rhythmic bars for reference: first tries to find the longest rhythm of the group divisible by 12... 
 	-- (was trying to find the quarter note value but i dont think its possible to get this right always)
-	love.graphics.setColor( 0.0,0.0,0.0 );
+	-- love.graphics.setColor( 0.0,0.0,0.0 );
+	-- local ptrn = songs[selectedSong].patterns[selectedPattern];
+	-- local longestval = 0; local ind;
+	-- for i = ptrn.tempo, ptrn.tempo+7 do
+		-- local ctv = RHYTHM_TABLE[i]; -- current tempo value
+		-- if (ctv > longestval and (ctv / 12) % 1 == 0) then
+			-- longestval = ctv; ind = i;
+		-- end
+	-- end
 	local ptrn = songs[selectedSong].patterns[selectedPattern];
-	local longestval = 0; local ind;
-	for i = ptrn.tempo, ptrn.tempo+7 do
-		local ctv = RHYTHM_TABLE[i]; -- current tempo value
-		if (ctv > longestval and (ctv / 12) % 1 == 0) then
-			longestval = ctv; ind = i;
-		end
-	end
+	local qnd = ptrn.quarter_note_duration;
 	-- ...and draws them here
-	if longestval ~= 0 then
-		for i = 0, (ptrn.duration / longestval) do
-			local x = pianoroll_trax( longestval * i );
+	if qnd ~= 0 then
+		for i = 0, (ptrn.duration / (qnd/4)) do
+			if i % 4 == 0 then
+				love.graphics.setColor(0,0,0,1);
+			else
+				love.graphics.setColor(0,0,0,0.5);
+			end
+			
+			local x = pianoroll_trax( (qnd/4) * i );
 			love.graphics.line(x,DIVIDER_POS,x,WINDOW_HEIGHT);
 		end
 	end

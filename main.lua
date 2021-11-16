@@ -2,6 +2,7 @@ require "song"
 require "pattern"
 require "rom"
 require "bitwise"
+require "playback"
 require "render"
 require "guielement"
 require "gui"
@@ -9,9 +10,9 @@ require "gui"
 function love.load()
 	
 	SRC_PULSE2 = love.audio.newSource( "square.wav", "static" );
-	SRC_PULSE2:setLooping(true);
+	SRC_PULSE2:setLooping(true); SRC_PULSE2:setVolume(0.6);
 	SRC_PULSE1 = love.audio.newSource( "square.wav", "static" );
-	SRC_PULSE1:setLooping(true);
+	SRC_PULSE1:setLooping(true); SRC_PULSE1:setVolume(0.6);
 	SRC_TRI = love.audio.newSource( "tri.wav", "static" );
 	SRC_TRI:setLooping(true);
 	
@@ -47,31 +48,31 @@ function love.load()
 	s = Song:new{ name = "Game Over",
 	ptr_start_index = 0x791e, hasNoise = false, loop = false };
 	s = Song:new{ name = "Princess Rescued",
-	ptr_start_index = 0x791f, hasNoise = false, loop = true };
+	ptr_start_index = 0x791f, hasNoise = false, loop = true, quarter_note_duration = 48 };
 	s = Song:new{ name = "Toad Rescued",
-	ptr_start_index = 0x7920, hasNoise = false, loop = false };
+	ptr_start_index = 0x7920, hasNoise = false, loop = false, quarter_note_duration = 48 };
 	s = Song:new{ name = "Game Over (Alt.)",
 	ptr_start_index = 0x7921, hasNoise = false, loop = false };	
 	s = Song:new{ name = "Level Complete",
-	ptr_start_index = 0x7922, hasNoise = false, loop = false };
+	ptr_start_index = 0x7922, hasNoise = false, loop = false, quarter_note_duration = 48 };
 	s = Song:new{ name = "Hurry Up!",
-	ptr_start_index = 0x7923, hasNoise = false, loop = false };
+	ptr_start_index = 0x7923, hasNoise = false, loop = false, quarter_note_duration = 48 };
 	s = Song:new{ name = "Silence",
 	ptr_start_index = 0x7924, hasNoise = false, loop = false };
 	s = Song:new{ name = "(Unknown)",
 	ptr_start_index = 0x7925, hasNoise = true, loop = false };
 	s = Song:new{ name = "Underwater",
-	ptr_start_index = 0x7926, hasNoise = true,  loop = true };	
+	ptr_start_index = 0x7926, hasNoise = true,  loop = true, quarter_note_duration = 48 };	
 	s = Song:new{ name = "Underground",
 	ptr_start_index = 0x7927, hasNoise = false, loop = true, hasPulse1 = false };	
 	s = Song:new{ name = "Castle",
-	ptr_start_index = 0x7928, hasNoise = false, loop = true };	
+	ptr_start_index = 0x7928, hasNoise = false, loop = true, quarter_note_duration = 40 };	
 	s = Song:new{ name = "Coin Heaven",
-	ptr_start_index = 0x7929, hasNoise = true,  loop = true };	
+	ptr_start_index = 0x7929, hasNoise = true,  loop = true, quarter_note_duration = 48 };	
 	s = Song:new{ name = "Pipe Cutscene",
 	ptr_start_index = 0x792a, hasNoise = true,  loop = false };	
 	s = Song:new{ name = "Starman",
-	ptr_start_index = 0x792b, hasNoise = true,  loop = true };
+	ptr_start_index = 0x792b, hasNoise = true,  loop = true, quarter_note_duration = 48 };
 	s = Song:new{ name = "Lives Screen",
 	ptr_start_index = 0x792c, hasNoise = false, loop = false };
 	s = Song:new{ name = "Overworld",
@@ -119,23 +120,40 @@ function love.mousepressed( x,y,button )
 	end
 	if (bypassGameClick) then bypassGameClick = false; return; end
 	
+	if GROUP_FILE.active or GROUP_EDIT.active then
+		GROUP_FILE:hide(); GROUP_EDIT:hide();
+		openGUIWindow(GROUP_TOPBAR);
+	end
+	
 	-- left clicking on the piano roll has several functions:
 	if (button == 1) then
-		if love.mouse.getY() > DIVIDER_POS and love.mouse.getX() > SIDE_PIANO_WIDTH then
-		
-			local note = math.ceil(piano_roll_untray(y));
+		if love.mouse.getY() > DIVIDER_POS then
 			local tick = (piano_roll_untrax(x));
 			local ptrn = songs[selectedSong].patterns[selectedPattern];
-			local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
 			
-			if (not existingnote) then return end
-			-- clicking the right edge of the note: initates dragging for rhythm changing
-			if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
-				DRAGGING_NOTE = existingnote.noteindex;
+			-- clicking the bar at the very top of the piano roll:
+			-- initiates dragging for pattern endpoint changing
+			if love.mouse.getY() < DIVIDER_POS + PIANOROLL_TOPBAR_HEIGHT then
+				local enddist = math.abs( tick - ptrn.duration );
+				if enddist < 16 then
+					print("dragging end point");
+					PTRN_END_DRAGGING = true;
+				end
 				
-			-- otherwise places/removes notes
-			else
-				ptrn:writePitch(note,existingnote,selectedChannel);
+			-- clicking elsewhere in the piano roll:
+			elseif love.mouse.getX() > SIDE_PIANO_WIDTH then
+				local note = math.ceil(piano_roll_untray(y));
+				local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
+				if (not existingnote) then return end
+				
+				-- clicking the right edge of the note: initates dragging for rhythm changing
+				if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
+					DRAGGING_NOTE = existingnote.noteindex;
+					
+				-- otherwise places/removes notes
+				else
+					ptrn:writePitch(note,existingnote,selectedChannel);
+				end
 			end
 		end
 	end
@@ -143,10 +161,11 @@ end
 
 function love.mousereleased( x,y,button )
 	DRAGGING_NOTE = nil;
+	PTRN_END_DRAGGING = false;
 end
 
 function love.mousemoved( x, y, dx, dy, istouch )
-	-- middle click and dragging: pans the piano roll
+	-- middle click and dragging: pans the view
 	if love.mouse.isDown( 3 ) then
 		if love.mouse.getY() > DIVIDER_POS then
 			PIANOROLL_SCROLLX = PIANOROLL_SCROLLX - (dx / PIANOROLL_ZOOMX);
@@ -155,17 +174,23 @@ function love.mousemoved( x, y, dx, dy, istouch )
 			PATTERN_SCROLL = PATTERN_SCROLL - (dx / PATTERN_ZOOMX);
 		end
 	end
-	-- dragging left and right in the side piano: zooms in and out the y axis of the piano roll
-	if love.mouse.isDown( 1 ) then
-		if love.mouse.getY() > DIVIDER_POS and love.mouse.getX() < SIDE_PIANO_WIDTH then
-			PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
-			PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
-		
-	-- dragging left and right on a note: edits the rhythm
-		elseif love.mouse.getY() > DIVIDER_POS then
+	
+	-- left click and dragging: various functions
+	if love.mouse.isDown( 1 ) then	
+		if love.mouse.getY() > DIVIDER_POS then
+			local tick = math.floor(piano_roll_untrax(x));
+			-- dragging left and right on a note: edits the rhythm
 			if (DRAGGING_NOTE) then
-				local tick = math.floor(piano_roll_untrax(x));
-				songs[selectedSong].patterns[selectedPattern]:changeRhythm( tick, DRAGGING_NOTE, selectedChannel )
+				songs[selectedSong].patterns[selectedPattern]:changeRhythm( tick, DRAGGING_NOTE, selectedChannel );
+			
+			-- dragging on the top bar of the piano roll: edits the pattern end point
+			elseif (PTRN_END_DRAGGING) then
+				songs[selectedSong].patterns[selectedPattern]:changeEndpoint( tick, selectedChannel );
+			
+			-- dragging left and right in the side piano: zooms in and out the y axis of the piano roll
+			elseif love.mouse.getX() < SIDE_PIANO_WIDTH then
+				PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
+				PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
 			end
 		end
 	end
@@ -219,7 +244,7 @@ function popupText(text,color)
 	if (text ~= popup_text or popup_timer <= 0) then
 		popup_start = -30;
 	end
-	popup_timer = 10 * #text; 
+	popup_timer = 9 * #text; 
 	popup_text = text; 
 	popup_color = color;
 end
@@ -229,118 +254,6 @@ function selectSong(index)
 	selectedPattern = 0; selectedChannel = "pulse2";
 	parseAllSongs();
 	updatePatternGUI( songs[index] );
-end
-
--- initialises the preview
-function previewNote(val)
-	-- TODO make sources accessible from table of keys
-	local source;
-	if selectedChannel == "pulse2" then
-		source = SRC_PULSE2;
-	elseif selectedChannel == "pulse1" then
-		source = SRC_PULSE1;
-	elseif selectedChannel == "tri" then
-		source = SRC_TRI;
-	end
-	if not source then return end
-	local freq = FREQ_TABLE[ val ];
-	if not freq then source:stop(); return end
-	
-	if (source == SRC_TRI) then
-		freq = freq / 2;
-	end
-	source:setPitch( freq / 130.8128 ); -- <- the frequency of the square wave sample im using right now
-	source:play();
-	preview_playing = true; previewtick = 20;
-end
-function playPreview()
-	if previewtick <= 1 then
-		local source;
-		if selectedChannel == "pulse2" then
-			source = SRC_PULSE2;
-		elseif selectedChannel == "pulse1" then
-			source = SRC_PULSE1;
-		elseif selectedChannel == "tri" then
-			source = SRC_TRI;
-		end
-		if not source then return end
-		source:stop(); preview_playing = false;
-	end
-	previewtick = previewtick - 1;
-end
-
-function play()
-	local ptrn = songs[selectedSong].patterns[playingPattern];
-	playChannel( ptrn.pulse2_notes, SRC_PULSE2 );
-	playChannel( ptrn.tri_notes,    SRC_TRI );
-	playChannel( ptrn.pulse1_notes, SRC_PULSE1 );
-	playChannel( ptrn.noise_notes,  SRC_KICK );
-	
-	if (playpos >= ptrn.duration) then 
-		if songs[selectedSong].loop then
-			playingPattern = ( playingPattern + 1 ) % ( songs[selectedSong].patternCount );
-			playpos = -1;
-			songpos = songpos - 1;
-			
-			-- loop back to the beginning of song
-			if playingPattern == 0 then
-				songpos = -1;
-			end
-		else
-			stop();
-		end
-	end
-	
-	playpos = playpos + 1;
-	songpos = songpos + 1;
-end
-
-function playChannel( notes, source )
-	local ptrn = songs[selectedSong].patterns[playingPattern];
-	if not notes[0] then return end
-	for i = 0, #notes do
-		local note = notes[i];
-		local pos = playpos;
-		-- noise playback loops
-		if source == SRC_KICK and ptrn.noiseduration < ptrn.duration then
-			pos = pos % ptrn.noiseduration;
-		end
-		if note.starttime == pos then
-			
-			if ( note.val == 04) then
-				source:stop();
-			else
-				-- special noise handling playback
-				if source == SRC_KICK then
-					if note.val == 0x10 then -- closed hat
-						SRC_CH:play();
-					elseif note.val == 0x20 then -- kick
-						source:play();
-					elseif note.val == 0x30 then -- open hat
-						SRC_OH:play();
-					else
-						return;
-					end
-				else
-					local freq = FREQ_TABLE[ note.val ];
-					if not freq then source:stop(); return end
-					
-					if (source == SRC_TRI) then
-						freq = freq / 2;
-					end
-					source:setPitch( freq / 130.8128 ); -- <- the frequency of the square wave sample im using right now
-					source:play();
-				end
-			end
-		end
-	end
-end
-
-function stop()
-	SRC_PULSE2:stop();
-	SRC_PULSE1:stop();
-	SRC_TRI:stop();
-	playing = false;
 end
 
 function love.draw()
@@ -361,6 +274,10 @@ function love.draw()
 		love.graphics.line(linex,DIVIDER_POS,linex,WINDOW_HEIGHT);
 	end
 	
+	if selectedChannel == "pulse2" then
+		love.graphics.setColor( CHANNEL_COLORS[selectedChannel] );
+		love.graphics.rectangle("fill",pianoroll_trax(0),DIVIDER_POS,pianoroll_trax(ptrn.duration)-pianoroll_trax(0),PIANOROLL_TOPBAR_HEIGHT);
+	end
 	renderSidePiano();
 	
 	-- masks out anything of the piano roll rendered above the divider
@@ -377,12 +294,12 @@ function love.draw()
 	
 	love.graphics.setColor( 1,1,1 );
 	local bytes_str = ptrn:getBytesUsed(selectedChannel) .. "/" .. ptrn:getBytesAvailable(selectedChannel);
-	love.graphics.print( bytes_str, WINDOW_WIDTH - 116, DIVIDER_POS + 8 )
+	love.graphics.print( bytes_str, WINDOW_WIDTH - 135, DIVIDER_POS + 32 )
 	
 	-- pattern editor play line
 	love.graphics.setColor( 1,0,0 );
 	local linex = ((songpos - PATTERN_SCROLL) * PATTERN_ZOOMX) --+ WINDOW_WIDTH / 2;
-	love.graphics.line(linex,60,linex,DIVIDER_POS);
+	love.graphics.line(linex,120,linex,DIVIDER_POS - 5);
 	
 	if popup_timer > 0 then
 		local py = WINDOW_HEIGHT - 72 - 2*popup_start;

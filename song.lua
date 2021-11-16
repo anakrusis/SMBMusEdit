@@ -12,6 +12,8 @@ Song = {
 	
 	patterns = {},
 	
+	quarter_note_duration = 36,
+	
 	-- underground, castle, and all the event music have no noise
 	hasNoise  = true,
 	-- I think only underground has no pulse1
@@ -44,6 +46,7 @@ function Song:parse()
 	
 		local p = Pattern:new();
 		p.starttime = duration;
+		p.quarter_note_duration = self.quarter_note_duration;
 		p.songindex = self.songindex;
 		p.patternindex = i;
 		p.hasNoise  = self.hasNoise;

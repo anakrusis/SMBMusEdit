@@ -29,6 +29,8 @@ Pattern = {
 	-- the unit of measure is game ticks 
 	duration = 0,
 	noiseduration = 0,
+	-- just for visual reference, thats all
+	quarter_note_duration = 36,
 	
 	-- more like a pointer into a set of eight note durations
 	tempo    = nil,
@@ -52,6 +54,56 @@ function Pattern:new(o)
 	o.noise_notes  = {};
 	
 	return o
+end
+
+function Pattern:changeEndpoint(tick, channel)
+	local notes = self:getNotes(channel);
+	
+	local lastnotebefore = nil;
+	local lastdurbefore = 0;
+	for i = 0, #notes do
+		local cn = notes[i];
+	
+		if lastdurbefore + cn.duration > tick then
+			lastnotebefore = cn;
+			break;
+		end
+		
+		lastdurbefore = lastdurbefore + cn.duration;
+	end
+	if not lastnotebefore then return; end
+	local lastnoteromind = lastnotebefore.rom_index;
+	local insertindex;
+	-- If this note is preceded by a rhythm byte, then insert before that too
+	if rom:get(lastnoteromind - 1) >= 0x80 and rom:get(lastnoteromind) <= 0x87 then
+		insertindex = lastnoteromind - 1;
+	else
+		insertindex = lastnoteromind;
+	end
+	
+	print( string.format( "%02X", insertindex ));
+	
+	rom.data[insertindex].insert_before = 0x00;
+	rom:commitMarkers(insertindex,insertindex);
+	
+	local strt = self:getStartIndex(channel);
+	local curind = strt + self:getBytesAvailable(channel) - 1
+	local cb = rom.data[curind]
+	local cv = cb.val;
+	print(string.format( "%02X",cv) .. "removed at $" .. string.format( "%04X",curind) );
+	
+	cb.delete = true;
+	rom:commitMarkers(curind,curind);
+	parseAllSongs();
+	
+	-- local lastnoteromind = lastnotebefore.rom_index;
+	-- local insertafterind = lastnoteromind;
+	-- if rom:get(lastnoteromind - 1) >= 0x80 and rom:get(lastnoteromind) <= 0x87 then
+	
+	-- else
+		-- insertafterind = insertafterind
+	-- end
+	--print( string.format( "%02X", rom:get(lastnoteromind) ));
 end
 
 function Pattern:changeRhythm( tick, noteindex, channel )
@@ -190,9 +242,9 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 			elseif (cv == 0x00) then
 			
 			else
-				local newrhythm = RHYTHM_TABLE[ (0x80 - lastrhythm) + self.tempo ];
+				--local newrhythm = RHYTHM_TABLE[ (0x80 - lastrhythm) + self.tempo ];
 				--print( newrhythm );
-				newptrnlen = newptrnlen + newrhythm;
+				--newptrnlen = newptrnlen + newrhythm;
 			end
 		end
 		
@@ -270,7 +322,7 @@ function Pattern:writePitch(midinote, existingnote, channel)
 	end
 	
 	if (not newval) then
-		popupText("Note not available!", {1,0,0});
+		popupText("Note not available!", {1,1,1});
 		return; 
 	end
 	if newval ~= 04 then previewNote(newval); end
@@ -654,6 +706,8 @@ function Pattern:parse( hdr_strt_ind )
 	if (self.hasNoise) then
 		self.noiseduration = self:parseCompressedNotes(self.noise_start_index, self.noise_notes);
 	end
+	
+	--print(self:getName() .. " " .. self.quarter_note_duration);
 	
 	return self.duration;
 end

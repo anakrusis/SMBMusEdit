@@ -3,13 +3,15 @@ function initGUI()
 	-- scroll values for the two editors, pattern editor and piano roll editor
 	PATTERN_SCROLL = 0; PATTERN_ZOOMX = 1;
 	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0; PIANOROLL_ZOOMX = 4; PIANOROLL_ZOOMY = 20;
+	PIANOROLL_TOPBAR_HEIGHT = 16;
 	OPTIMIZE_SCROLL   = 0;
-	DIVIDER_POS = 300; SIDE_PIANO_WIDTH = 128;
+	DIVIDER_POS = 325; SIDE_PIANO_WIDTH = 128;
 	
 	-- text that shows up for errors and other info bits at the bottom
 	popup_timer = 0; popup_color = {}; popup_text = ""; popup_start = 0;
 	
-	NOTE_DRAGGING = nil;
+	DRAGGING_NOTE = nil;
+	PTRN_END_DRAGGING = false;
 	
 	elements = {};
 	
