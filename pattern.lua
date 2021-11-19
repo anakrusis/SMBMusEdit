@@ -75,7 +75,7 @@ function Pattern:changeEndpoint(tick, channel)
 	local lastnoteromind = lastnotebefore.rom_index;
 	local insertindex;
 	-- If this note is preceded by a rhythm byte, then insert before that too
-	if rom:get(lastnoteromind - 1) >= 0x80 and rom:get(lastnoteromind) <= 0x87 then
+	if rom:get(lastnoteromind - 1) >= 0x80 and rom:get(lastnoteromind - 1) <= 0x87 then
 		insertindex = lastnoteromind - 1;
 	else
 		insertindex = lastnoteromind;
@@ -95,17 +95,39 @@ function Pattern:changeEndpoint(tick, channel)
 	cb.delete = true;
 	rom:commitMarkers(curind,curind);
 	parseAllSongs();
-	
-	-- local lastnoteromind = lastnotebefore.rom_index;
-	-- local insertafterind = lastnoteromind;
-	-- if rom:get(lastnoteromind - 1) >= 0x80 and rom:get(lastnoteromind) <= 0x87 then
-	
-	-- else
-		-- insertafterind = insertafterind
-	-- end
-	--print( string.format( "%02X", rom:get(lastnoteromind) ));
 end
 
+-- Appending a note is comparitively simple, it will always be a one-byte operation. 
+-- The note appended will match the rhythm value of the preceding note by default
+function Pattern:appendNote(midinote, tick, channel)
+	local bytecost = 1;
+	
+	if (channel == "pulse1" or channel == "noise") then
+	
+	else
+		local strt = self:getStartIndex(channel);
+		local curind = strt + self:getBytesUsed(channel) + bytecost - 1;
+		local cb = rom.data[curind]
+		local cv = cb.val;
+		--print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
+		
+		--cb.insert_after = 0xff;
+	end
+
+	if bytecost > self:getBytesAvailable(channel) - self:getBytesUsed(channel) then
+		popupText("Not enough free bytes in this channel to append note!\nEdit > Optimize to allocate unused bytes!", {1,1,1});
+		
+		-- Byte markers MUST be cleared if cancelling an action
+		-- (otherwise they will unintentionally take effect next action)
+		rom:clearMarkers();
+		return;
+	end
+	
+	rom:commitMarkers();
+	parseAllSongs();
+end
+
+-- Changing rhythms is difficult, so it is split into a multi-pass process below:
 function Pattern:changeRhythm( tick, noteindex, channel )
 	local existingnote = self:getNotes(channel)[ noteindex ];
 	local relativedur = tick - existingnote.starttime;
@@ -165,21 +187,16 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		
 		local prevbyte = temprom.data[ existingnote.rom_index - 1 ];
 		local prevval  = prevbyte.val;
-		-- Rhythm byte:
+		-- Rhythm byte before note:
+		-- change it accordingly
 		if (prevval >= 0x80 and prevval <= 0x87) then
-			--print("changing rhythm byte to " .. string.format( "%02X", NEW_RHYTHM));
 			prevbyte.change = NEW_RHYTHM;
 			
-		-- Non-rhythm byte:
+		-- Non-rhythm byte before note:
+		-- insert a new rhythm byte before
 		else
-			--print("inserting rhythm byte before");
-			strt = self:getStartIndex(channel);
 			bytecost = bytecost + 1;
-			lastind = strt + self:getBytesUsed(channel) + bytecost; 
-			
 			currbyte.insert_before = NEW_RHYTHM;
-			--print("deleting " .. string.format( "%02X",temprom.data[lastind - 1].val));
-			--temprom.data[lastind - 1].delete = true;
 		end
 		
 		local nextbyte = temprom.data[ existingnote.rom_index + 1 ];
@@ -188,16 +205,14 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		-- special handling for the last note of the pattern (ignore for now)
 		if not nextnote then
 			
-		-- Rhythm byte: (ignore for now)
+		-- Rhythm byte after note: (no need to do anything)
 		elseif (nextval >= 0x80 and nextval <= 0x87) then
 
-		-- Non-rhythm byte:
+		-- Non-rhythm byte after note:
 		-- a rhythm byte will be inserted after.
 		-- to figure out what rhythm value it will hold, we must assess the duration of the note
 		else
-			strt = self:getStartIndex(channel);
 			bytecost = bytecost + 1;
-			lastind = strt + self:getBytesUsed(channel) + bytecost; 
 			
 			local cr = nil; -- currentrhythm
 			for q = self.tempo, self.tempo+7 do
@@ -208,9 +223,6 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 			local rhythmAfter = 0x80 + cr - self.tempo;
 			
 			currbyte.insert_after = rhythmAfter;
-			--print("inserting after " .. string.format( "%02X",rhythmAfter));
-			--print("deleting " .. string.format( "%02X",temprom.data[lastind - 1].val));
-			--temprom.data[lastind - 1].delete = true;
 		end
 		
 		temprom:commitMarkers();
@@ -223,18 +235,12 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		for i = self:getStartIndex(channel), self:getStartIndex(channel) + self:getBytesUsed(channel) + bytecost do
 			local cb = temprom.data[i];
 			local cv = cb.val -- current val (of byte)
-			--print(string.format("%02X",cv));	
 			if (cv >= 0x80 and cv <= 0x87) then
+			
 				-- redundancy detection: will prevent rhythm bytes from being inserted if they are already present before
 				if lastrhythm == cv then
-					
 					--print("redundant rhythm removed " .. string.format( "%02X",cv));
-					
-					cb.delete = true;
-					strt = self:getStartIndex(channel);
-					lastind = strt + self:getBytesUsed(channel)
-					--temprom.data[lastind].insert_after = 0xff;
-			
+					cb.delete = true;			
 					bytecost = bytecost - 1;
 				end
 				lastrhythm = cv;

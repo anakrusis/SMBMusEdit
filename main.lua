@@ -144,13 +144,18 @@ function love.mousepressed( x,y,button )
 			elseif love.mouse.getX() > SIDE_PIANO_WIDTH then
 				local note = math.ceil(piano_roll_untray(y));
 				local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
-				if (not existingnote) then return end
 				
-				-- clicking the right edge of the note: initates dragging for rhythm changing
+				-- no note present in this space? must be past the edge of pattern. try appending a note
+				if (not existingnote) then
+					ptrn:appendNote(note, tick, selectedChannel);
+					return;
+				end
+				
+				-- clicking the right edge of a note: initates dragging for rhythm changing
 				if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
 					DRAGGING_NOTE = existingnote.noteindex;
 					
-				-- otherwise places/removes notes
+				-- otherwise places/removes notes where notes are present
 				else
 					ptrn:writePitch(note,existingnote,selectedChannel);
 				end
