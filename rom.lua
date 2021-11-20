@@ -139,9 +139,11 @@ function ROM:export(path)
 	file:close()
 end
 
-function ROM:import(path)
-	local file = io.open(path, "rb")
-	local content = file:read "*a" -- *a or *all reads the whole file
+function ROM:import(file)
+	--local file = io.open(path, "rb")
+	file:open("r");
+	--local content = file:read "*a" -- *a or *all reads the whole file
+	local content = file:read();
 	file:close()
 		
 	self.data = {};	

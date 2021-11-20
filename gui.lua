@@ -311,6 +311,8 @@ function updatePatternGUI( song )
 			local no = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_NOISE,  song = song.songindex, pattern = i, channel = "noise"};
 		end
 	end
+	
+	GROUP_PTRN_EDIT:show();
 end
 
 function renderGUI()

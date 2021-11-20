@@ -105,6 +105,15 @@ function parseAllSongs()
 	end
 end
 
+function love.filedropped(file)
+	rom = ROM:new();
+	rom:import(file);
+	initPitchTables();
+	initRhythmTables();
+	parseAllSongs();
+	selectSong(16);
+end
+
 function love.keypressed(key)
 	if key == "space" or key == "return" then
 		local ptrn = songs[selectedSong].patterns[selectedPattern];
@@ -128,13 +137,13 @@ function love.mousepressed( x,y,button )
 		openGUIWindow(GROUP_TOPBAR);
 	end
 	
+	local ptrn = songs[selectedSong].patterns[selectedPattern];
 	if not ptrn then return end
 	
 	-- left clicking on the piano roll has several functions:
 	if (button == 1) then
 		if love.mouse.getY() > DIVIDER_POS then
 			local tick = (piano_roll_untrax(x));
-			local ptrn = songs[selectedSong].patterns[selectedPattern];
 			
 			-- clicking the bar at the very top of the piano roll:
 			-- initiates dragging for pattern endpoint changing
@@ -314,7 +323,7 @@ function love.draw()
 	else
 		-- Text when you have nothing loaded in
 		love.graphics.setColor( 1,1,1 );
-		local txt_noload = "Drag and drop a ROM to get started!";
+		local txt_noload = "Drop a ROM here to get started!";
 		love.graphics.printf(txt_noload, SIDE_PIANO_WIDTH, DIVIDER_POS + (( WINDOW_HEIGHT - DIVIDER_POS ) / 2), WINDOW_WIDTH - SIDE_PIANO_WIDTH, "center" );
 	end
 	
