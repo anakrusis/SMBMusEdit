@@ -34,10 +34,10 @@ function love.load()
 	love.graphics.setFont(font)
 	frameCount = 0; -- just how many ticks the window has been open
 	
-	rom = ROM:new(); rom:import("smbmusedit-2/mario.nes");
+	rom = ROM:new(); --rom:import("smbmusedit-2/mario.nes");
 	
-	initPitchTables();
-	initRhythmTables();
+	--initPitchTables();
+	--initRhythmTables();
 	initGUI();
 	
 	SONG_COUNT = 0;
@@ -78,9 +78,9 @@ function love.load()
 	s = Song:new{ name = "Overworld",
 	ptr_start_index = 0x792d, hasNoise = true,  loop = true, patternCount = 33 };
 	
-	parseAllSongs();
+	--parseAllSongs();
 	
-	selectSong(16);
+	--selectSong(16);
 end
 
 function parseAllSongs()
@@ -107,8 +107,11 @@ end
 
 function love.keypressed(key)
 	if key == "space" or key == "return" then
+		local ptrn = songs[selectedSong].patterns[selectedPattern];
+		if not ptrn then return end
+		
 		playing = not playing;
-		playpos = 0; songpos = songs[selectedSong].patterns[selectedPattern].starttime;
+		playpos = 0; songpos = ptrn.starttime;
 		playingPattern = selectedPattern;
 		if (not playing) then stop(); end
 	end
@@ -124,6 +127,8 @@ function love.mousepressed( x,y,button )
 		GROUP_FILE:hide(); GROUP_EDIT:hide();
 		openGUIWindow(GROUP_TOPBAR);
 	end
+	
+	if not ptrn then return end
 	
 	-- left clicking on the piano roll has several functions:
 	if (button == 1) then
@@ -270,7 +275,9 @@ function love.draw()
 	love.graphics.rectangle("fill",0,DIVIDER_POS,WINDOW_WIDTH,WINDOW_HEIGHT);
 	renderAvailableNotes( selectedChannel );
 	
-	renderChannel( ptrn:getNotes(selectedChannel), CHANNEL_COLORS[selectedChannel]);
+	if (ptrn) then
+		renderChannel( ptrn:getNotes(selectedChannel), CHANNEL_COLORS[selectedChannel]);
+	end
 	
 	-- play line
 	if (playingPattern == selectedPattern) then
@@ -297,15 +304,26 @@ function love.draw()
 	-- All the buttons and menus and stuff
 	renderGUI();
 	
-	love.graphics.setColor( 1,1,1 );
-	local bytes_str = ptrn:getBytesUsed(selectedChannel) .. "/" .. ptrn:getBytesAvailable(selectedChannel);
-	love.graphics.print( bytes_str, WINDOW_WIDTH - 135, DIVIDER_POS + 32 )
+	-- Overlaid text not part of a gui element
+	if (ptrn) then
+		-- Bytes free out of bytes total enqueued
+		love.graphics.setColor( 1,1,1 );
+		local bytes_str = ptrn:getBytesUsed(selectedChannel) .. "/" .. ptrn:getBytesAvailable(selectedChannel);
+		love.graphics.print( bytes_str, WINDOW_WIDTH - 135, DIVIDER_POS + 32 )
+	
+	else
+		-- Text when you have nothing loaded in
+		love.graphics.setColor( 1,1,1 );
+		local txt_noload = "Drag and drop a ROM to get started!";
+		love.graphics.printf(txt_noload, SIDE_PIANO_WIDTH, DIVIDER_POS + (( WINDOW_HEIGHT - DIVIDER_POS ) / 2), WINDOW_WIDTH - SIDE_PIANO_WIDTH, "center" );
+	end
 	
 	-- pattern editor play line
 	love.graphics.setColor( 1,0,0 );
 	local linex = ((songpos - PATTERN_SCROLL) * PATTERN_ZOOMX) --+ WINDOW_WIDTH / 2;
 	love.graphics.line(linex,120,linex,DIVIDER_POS - 5);
 	
+	-- popup text
 	if popup_timer > 0 then
 		local py = WINDOW_HEIGHT - 72 - 2*popup_start;
 		if (popup_timer < 30) then py = py + 2*( 30 - popup_timer ) end

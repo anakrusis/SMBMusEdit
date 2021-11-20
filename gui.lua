@@ -192,6 +192,7 @@ function initGUI()
 	end
 	
 	openGUIWindow(GROUP_TOPBAR);
+	GROUP_PTRN_EDIT:hide();
 end
 
 function openGUIWindow( element )

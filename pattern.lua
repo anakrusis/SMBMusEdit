@@ -100,18 +100,34 @@ end
 -- Appending a note is comparitively simple, it will always be a one-byte operation. 
 -- The note appended will match the rhythm value of the preceding note by default
 function Pattern:appendNote(midinote, tick, channel)
-	local bytecost = 1;
+
+	local newval;
+	if (channel == "pulse2" or channel == "pulse1" or channel == "noise") then
+		newval = PITCH_VALS[midinote];
+	end
+	if (channel == "tri") then
+		newval = PITCH_VALS[midinote + 12];
+	end
 	
+	if (not newval) then
+		popupText("Can't append unavailable pitch!", {1,1,1});
+		return; 
+	end
+
+	local bytecost = 1;
 	if (channel == "pulse1" or channel == "noise") then
 	
 	else
 		local strt = self:getStartIndex(channel);
-		local curind = strt + self:getBytesUsed(channel) + bytecost - 1;
+		local curind = strt + self:getBytesUsed(channel) - 1;
+		-- This is because a note appended after the data terminator will not be seen
+		if (rom.data[curind].val == 0x00) then curind = curind - 1; end
+		
 		local cb = rom.data[curind]
 		local cv = cb.val;
 		--print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
 		
-		--cb.insert_after = 0xff;
+		cb.insert_after = newval;
 	end
 
 	if bytecost > self:getBytesAvailable(channel) - self:getBytesUsed(channel) then
@@ -124,6 +140,35 @@ function Pattern:appendNote(midinote, tick, channel)
 	end
 	
 	rom:commitMarkers();
+	
+	for i = 0, math.abs(bytecost) - 1 do
+		if bytecost == 0 then break; end
+	
+		local strt = self:getStartIndex(channel);
+		local curind;
+		
+		-- positive bytecost: bytes will be removed from the end
+		if bytecost > 0 then
+			curind = strt + self:getBytesAvailable(channel) + (bytecost - 1) - i;
+			local cb = rom.data[curind]
+			local cv = cb.val;
+			print(string.format( "%02X",cv) .. "removed at $" .. string.format( "%04X",curind) );
+			
+			cb.delete = true;
+			rom:commitMarkers(curind,curind);
+			
+		-- negative bytecost: bytes will be appended at the end
+		-- else
+			-- curind = strt + self:getBytesUsed(channel) + bytecost - 1;
+			-- local cb = temprom.data[curind]
+			-- local cv = cb.val;
+			-- print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
+			
+			-- cb.insert_after = 0xff;
+			-- temprom:commitMarkers(curind,curind);
+		end
+	end
+	
 	parseAllSongs();
 end
 
@@ -328,7 +373,7 @@ function Pattern:writePitch(midinote, existingnote, channel)
 	end
 	
 	if (not newval) then
-		popupText("Note not available!", {1,1,1});
+		popupText("Pitch not available!", {1,1,1});
 		return; 
 	end
 	if newval ~= 04 then previewNote(newval); end
@@ -371,9 +416,15 @@ function Pattern:allocateUnusedBytes(chnl)
 	-- last index, the index after which a new empty byte will be inserted
 	lastind = strt + self:getBytesAvailable(chnl); 
 
+	--rom.data[lastind].insert_before = 0xff;
+	--rom.data[ind].delete = true;
+	--rom:commitMarkers();
+	
 	newbyte = Byte:new{ val = 0xff }
 	table.insert( rom.data, lastind, newbyte )
-	table.remove( rom.data, ind );
+	
+	print(string.format("%02X", rom.data[ind + 1].val) .. " removed");
+	table.remove( rom.data, ind + 1 );
 	
 	-- now we must traverse all the headers and modify the ones between the insertion site and removal site.
 	-- because multiple patterns can share the same header, and we only want to modify each one once, 

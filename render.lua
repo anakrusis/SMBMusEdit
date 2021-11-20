@@ -12,7 +12,9 @@ function piano_roll_untray(y)
 end
 
 -- maybe this could be renamed to pianoRollBackground or something, not sure
-function renderAvailableNotes( channel ) 
+function renderAvailableNotes( channel )
+	if not NOTES then return end
+	
 	for i = 0, #NOTES do
 		local ind = i;
 		if ( channel == "pulse1" ) then
