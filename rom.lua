@@ -1,7 +1,9 @@
 -- object for performing operations and analytics on rom data
 ROM = {
 	-- table of Byte objects (starting at 0)
-	data = {}
+	data = {},
+	-- path used for exporting
+	path = nil,
 }
 
 -- bytes
@@ -107,7 +109,7 @@ end
 
 -- doesnt deep copy the claims tables (yet)(might not need to)
 function ROM:deepcopy(oldrom, startind, endind)
-	--self.data = {};
+	self.path = oldrom.path;
 	
 	if startind then DATA_START = startind; else DATA_START = 0; end
 	if endind   then DATA_END   = endind;   else DATA_END   = table.getn(oldrom.data); end
@@ -144,6 +146,7 @@ function ROM:import(file)
 	file:open("r");
 	--local content = file:read "*a" -- *a or *all reads the whole file
 	local content = file:read();
+	self.path = file:getFilename();
 	file:close()
 		
 	self.data = {};	

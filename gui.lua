@@ -79,8 +79,18 @@ function initGUI()
 	GROUP_FILE:hide();
 	local export = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_FILE, name="export", text="Export ROM"};
 	function export:onClick()
-		GROUP_FILE:hide(); openGUIWindow(GROUP_TOPBAR);
-		rom:export("smbmusedit-2/mario.nes");
+		if (rom.path) then
+			GROUP_FILE:hide(); openGUIWindow(GROUP_TOPBAR);
+			--rom:export("smbmusedit-2/mario.nes");
+			rom:export(rom.path);
+		end
+	end
+	function export:onUpdate()
+		if (rom.path) then
+			self.text_color = {1,1,1};
+		else
+			self.text_color = {0.3,0.3,0.3};
+		end
 	end
 	
 	GROUP_EDIT = GuiElement:new{x=97, y=55, width=500, height=3, name="edit_container", autopos = "left", autosize = true}; GROUP_EDIT:hide();
@@ -206,7 +216,9 @@ function openGUIWindow( element )
 	
 	-- Special case where these elements are inseperable, TODO maybe put these into a bigger super-group
 	if (element == GROUP_TOPBAR) then
-		GROUP_PTRN_EDIT.active = true;  GROUP_PTRN_EDIT:show();
+		if rom.path then
+			GROUP_PTRN_EDIT.active = true;  GROUP_PTRN_EDIT:show();
+		end
 		GROUP_TOPBAR2.active = true;  GROUP_TOPBAR2:show();
 	end
 	
@@ -312,7 +324,7 @@ function updatePatternGUI( song )
 		end
 	end
 	
-	GROUP_PTRN_EDIT:show();
+	--GROUP_PTRN_EDIT:show();
 end
 
 function renderGUI()

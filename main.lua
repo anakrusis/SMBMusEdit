@@ -112,6 +112,7 @@ function love.filedropped(file)
 	initRhythmTables();
 	parseAllSongs();
 	selectSong(16);
+	openGUIWindow(GROUP_TOPBAR);
 end
 
 function love.keypressed(key)
@@ -271,8 +272,10 @@ end
 function selectSong(index)
 	stop(); playpos = 0; songpos = 0; selectedSong = index;
 	selectedPattern = 0; selectedChannel = "pulse2";
-	parseAllSongs();
-	updatePatternGUI( songs[index] );
+	if rom.path then
+		parseAllSongs();
+		updatePatternGUI( songs[index] );
+	end
 end
 
 function love.draw()
@@ -295,7 +298,7 @@ function love.draw()
 		love.graphics.line(linex,DIVIDER_POS,linex,WINDOW_HEIGHT);
 	end
 	
-	if selectedChannel == "pulse2" then
+	if selectedChannel == "pulse2" and ptrn then
 		love.graphics.setColor( CHANNEL_COLORS[selectedChannel] );
 		love.graphics.rectangle("fill",pianoroll_trax(0),DIVIDER_POS,pianoroll_trax(ptrn.duration)-pianoroll_trax(0),PIANOROLL_TOPBAR_HEIGHT);
 	end

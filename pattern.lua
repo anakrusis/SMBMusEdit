@@ -139,6 +139,7 @@ function Pattern:appendNote(midinote, tick, channel)
 		return;
 	end
 	
+	previewNote(newval);
 	rom:commitMarkers();
 	
 	for i = 0, math.abs(bytecost) - 1 do
@@ -423,8 +424,9 @@ function Pattern:allocateUnusedBytes(chnl)
 	newbyte = Byte:new{ val = 0xff }
 	table.insert( rom.data, lastind, newbyte )
 	
-	print(string.format("%02X", rom.data[ind + 1].val) .. " removed");
-	table.remove( rom.data, ind + 1 );
+	if (lastind <= ind) then ind = ind + 1 end
+	print(string.format("%02X", rom.data[ind].val) .. " removed");
+	table.remove( rom.data, ind );
 	
 	-- now we must traverse all the headers and modify the ones between the insertion site and removal site.
 	-- because multiple patterns can share the same header, and we only want to modify each one once, 
