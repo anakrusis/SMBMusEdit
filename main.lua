@@ -9,6 +9,7 @@ require "gui"
 local utf8 = require("utf8")
 
 function love.load()
+	VERSION_NAME = "SMBMusEdit pre-0.1.0a test build #1"
 	
 	SRC_PULSE2 = love.audio.newSource( "square.wav", "static" );
 	SRC_PULSE2:setLooping(true); SRC_PULSE2:setVolume(0.6);
@@ -29,7 +30,7 @@ function love.load()
 	selectedPattern = 0;
 	selectedSong    = 0;
 	
-	love.window.setTitle("SMBMusEdit 0.1.0a pre")
+	love.window.setTitle(VERSION_NAME);
 	success = love.window.setMode( 800, 800, {resizable=true, minwidth=800, minheight=600} )
 	WINDOW_WIDTH = 800; WINDOW_HEIGHT = 800;
 	font = love.graphics.newFont("zeldadxt.ttf", 24)
@@ -363,6 +364,8 @@ function selectSong(index)
 	if rom.path then
 		parseAllSongs();
 		updatePatternGUI( songs[index] );
+		
+		love.window.setTitle(rom.filename .. " [" .. songs[index].name .. "] - " .. VERSION_NAME)
 	end
 end
 
@@ -411,7 +414,7 @@ function love.draw()
 	else
 		-- Text when you have nothing loaded in
 		love.graphics.setColor( 1,1,1 );
-		local txt_noload = "Drop a ROM here to get started!";
+		local txt_noload = "Drop your ROM here to get started!";
 		love.graphics.printf(txt_noload, SIDE_PIANO_WIDTH, DIVIDER_POS + (( WINDOW_HEIGHT - DIVIDER_POS ) / 2), WINDOW_WIDTH - SIDE_PIANO_WIDTH, "center" );
 	end
 	

@@ -4,6 +4,8 @@ ROM = {
 	data = {},
 	-- path used for exporting
 	path = nil,
+	-- just a display name for the rom
+	filename = "",
 }
 
 -- bytes
@@ -111,6 +113,7 @@ end
 -- doesnt deep copy the claims tables (yet)(might not need to)
 function ROM:deepcopy(oldrom, startind, endind)
 	self.path = oldrom.path;
+	self.filename = oldrom.filename;
 	
 	if startind then DATA_START = startind; else DATA_START = 0; end
 	if endind   then DATA_END   = endind;   else DATA_END   = table.getn(oldrom.data); end
@@ -148,6 +151,17 @@ function ROM:import(file)
 	--local content = file:read "*a" -- *a or *all reads the whole file
 	local content = file:read();
 	self.path = file:getFilename();
+	local i, j = self.path:find(".nes");
+	local begin;
+	for q = i, 1, -1 do
+		local curchar = self.path:sub(q,q);
+		if curchar == "/" or curchar == "\\" then
+			begin = q + 1;
+			break;
+		end
+	end
+
+	self.filename = self.path:sub(begin,j)
 	file:close()
 		
 	self.data = {};	

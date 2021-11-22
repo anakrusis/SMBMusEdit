@@ -636,7 +636,7 @@ function Pattern:parseNotes(start_index, target_table)
 		end
 		
 		-- Pattern terminator
-		if val == 0x00 and target_table == self.pulse2_notes then
+		if val == 0x00 then
 			return duration;
 		end
 		
