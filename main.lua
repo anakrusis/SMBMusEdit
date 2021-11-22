@@ -31,8 +31,12 @@ function love.load()
 	
 	love.window.setTitle("SMBMusEdit 0.1.0a pre")
 	success = love.window.setMode( 800, 800, {resizable=true, minwidth=800, minheight=600} )
+	WINDOW_WIDTH = 800; WINDOW_HEIGHT = 800;
 	font = love.graphics.newFont("zeldadxt.ttf", 24)
 	love.graphics.setFont(font)
+	CURSOR_HORIZ = love.mouse.getSystemCursor( "sizewe" );
+	CURSOR_VERT  = love.mouse.getSystemCursor( "sizens" );
+	
 	frameCount = 0; -- just how many ticks the window has been open
 	
 	rom = ROM:new(); --rom:import("smbmusedit-2/mario.nes");
@@ -40,6 +44,7 @@ function love.load()
 	--initPitchTables();
 	--initRhythmTables();
 	initGUI();
+	
 	
 	SONG_COUNT = 0;
 	songs = {};
@@ -238,6 +243,8 @@ function love.mousereleased( x,y,button )
 end
 
 function love.mousemoved( x, y, dx, dy, istouch )
+	love.mouse.setCursor()
+
 	-- middle click and dragging: pans the view
 	if love.mouse.isDown( 3 ) then
 		if love.mouse.getY() > DIVIDER_POS then
@@ -248,22 +255,50 @@ function love.mousemoved( x, y, dx, dy, istouch )
 		end
 	end
 	
+	local ptrn = songs[selectedSong].patterns[selectedPattern];
+	if not ptrn then return end
+	
 	-- left click and dragging: various functions
 	if love.mouse.isDown( 1 ) then	
 		if love.mouse.getY() > DIVIDER_POS then
 			local tick = math.floor(piano_roll_untrax(x));
 			-- dragging left and right on a note: edits the rhythm
 			if (DRAGGING_NOTE) then
-				songs[selectedSong].patterns[selectedPattern]:changeRhythm( tick, DRAGGING_NOTE, selectedChannel );
+				ptrn:changeRhythm( tick, DRAGGING_NOTE, selectedChannel );
 			
 			-- dragging on the top bar of the piano roll: edits the pattern end point
 			elseif (PTRN_END_DRAGGING) then
-				songs[selectedSong].patterns[selectedPattern]:changeEndpoint( tick, selectedChannel );
+				ptrn:changeEndpoint( tick, selectedChannel );
 			
 			-- dragging left and right in the side piano: zooms in and out the y axis of the piano roll
 			elseif love.mouse.getX() < SIDE_PIANO_WIDTH then
 				PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
 				PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
+			end
+		end
+	end
+	
+	-- Cursors for different mouse usages
+	
+	if DRAGGING_NOTE or PTRN_END_DRAGGING then love.mouse.setCursor( CURSOR_HORIZ ) end
+	
+	if love.mouse.getY() > DIVIDER_POS and GROUP_TOPBAR.active then
+		local tick = (piano_roll_untrax(x));
+		
+		-- Dragging pattern length 
+		if love.mouse.getY() < DIVIDER_POS + PIANOROLL_TOPBAR_HEIGHT then
+			local enddist = math.abs( tick - ptrn.duration );
+			if enddist < 16 then
+				love.mouse.setCursor( CURSOR_HORIZ )
+			end
+		elseif love.mouse.getX() > SIDE_PIANO_WIDTH then
+			local note = math.ceil(piano_roll_untray(y));
+			local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
+			if (not existingnote) then
+				return;
+			end
+			if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
+				love.mouse.setCursor( CURSOR_HORIZ )
 			end
 		end
 	end
@@ -366,9 +401,6 @@ function love.draw()
 	-- Pattern editor rendering
 	--love.graphics.rectangle("fill",0,0,ptrn.duration,50);
 	
-	-- All the buttons and menus and stuff
-	renderGUI();
-	
 	-- Overlaid text not part of a gui element
 	if (ptrn) then
 		-- Bytes free out of bytes total enqueued
@@ -382,6 +414,9 @@ function love.draw()
 		local txt_noload = "Drop a ROM here to get started!";
 		love.graphics.printf(txt_noload, SIDE_PIANO_WIDTH, DIVIDER_POS + (( WINDOW_HEIGHT - DIVIDER_POS ) / 2), WINDOW_WIDTH - SIDE_PIANO_WIDTH, "center" );
 	end
+	
+	-- All the buttons and menus and stuff
+	renderGUI();
 	
 	-- pattern editor play line
 	love.graphics.setColor( 1,0,0 );

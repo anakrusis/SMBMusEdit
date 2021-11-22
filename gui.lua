@@ -86,7 +86,7 @@ function initGUI()
 		if (rom.path) then
 			--rom:export("smbmusedit-2/mario.nes");
 			rom:export(rom.path);
-			GROUP_FILE:hide(); openGUIWindow(GROUP_TOPBAR);
+			GROUP_FILE:hide(); openGUIWindow( GROUP_EXPORT_SUCCESS );
 		end
 	end
 	function export:onUpdate()
@@ -234,10 +234,118 @@ function initGUI()
 		local infostr = "Current Pattern: ";
 		infostr = infostr .. ptrn:getName();
 		infostr = infostr .. "\n\n---\n\nPtr to Header:     + $791D = $" .. string.format("%04X", ptrn.header_start_index);
+		infostr = infostr .. "\n\nPtr to Pulse 2: $      ";
+		infostr = infostr .. "\n\nPtr to Pulse 1: $" .. string.format("%04X", ptrn.pulse2_start_index) .. 
+		" +    = $" .. string.format("%04X", ptrn.pulse1_start_index);
+		infostr = infostr .. "\n\nPtr to Tri:     $" .. string.format("%04X", ptrn.pulse2_start_index) .. 
+		" +    = $" .. string.format("%04X", ptrn.tri_start_index);
+		
+		if ptrn.hasNoise then
+			infostr = infostr .. "\n\nPtr to Noise:   $" .. string.format("%04X", ptrn.pulse2_start_index) .. 
+			" +    = $" .. string.format("%04X", ptrn.noise_start_index);
+		end
+		
 		self.text = infostr;
 	end
 	
-	local pointer = GuiElement:new{x=0,y=0,width=65,height=50,parent=pointeredit, text="", staticposition = true, maxlen = 2};
+	local noiseptr = GuiElement:new{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
+	function noiseptr:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		if ptrn.hasNoise then self:show(); else self:hide(); return; end
+		self.x = pointeredit.dispx + 385;
+		self.y = pointeredit.dispy + 242;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%02X", rom:get(ptrn.header_start_index + 5));
+		end
+	end
+	function noiseptr:onClick()
+		selectedTextBox = self;
+		selectedTextEntry = self.text;
+	end
+	function noiseptr:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local hex = tonumber(self.text,16);
+		rom:put( ptrn.header_start_index + 5, hex )
+		parseAllSongs();
+	end
+	
+	local triptr = GuiElement:new{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
+	function triptr:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		self.x = pointeredit.dispx + 385;
+		self.y = pointeredit.dispy + 200;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%02X", rom:get(ptrn.header_start_index + 3));
+		end
+	end
+	function triptr:onClick()
+		selectedTextBox = self;
+		selectedTextEntry = self.text;
+	end
+	function triptr:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local hex = tonumber(self.text,16);
+		rom:put( ptrn.header_start_index + 3, hex )
+		parseAllSongs();
+	end
+	
+	local p1ptr = GuiElement:new{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
+	function p1ptr:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		self.x = pointeredit.dispx + 385;
+		self.y = pointeredit.dispy + 158;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%02X", rom:get(ptrn.header_start_index + 4));
+		end
+	end
+	function p1ptr:onClick()
+		selectedTextBox = self;
+		selectedTextEntry = self.text;
+	end
+	function p1ptr:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local hex = tonumber(self.text,16);
+		rom:put( ptrn.header_start_index + 4, hex )
+		parseAllSongs();
+	end
+	
+	local p2ptr = GuiElement:new{x=0,y=0,width=100,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 4};
+	function p2ptr:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		self.x = pointeredit.dispx + 285;
+		self.y = pointeredit.dispy + 115;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%04X", ptrn.pulse2_start_index);
+		end
+	end
+	function p2ptr:onClick()
+		selectedTextBox = self;
+		selectedTextEntry = self.text;
+	end
+	function p2ptr:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local hex = tonumber(self.text,16);
+		rom:putWord(ptrn.header_start_index + 1, (0x8000 + hex) - 0x10);
+		parseAllSongs();
+	end
+	
+	local pointer = GuiElement:new{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
 	function pointer:onUpdate()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
@@ -271,7 +379,14 @@ function initGUI()
 	GROUP_PARSE_ERROR.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_PARSE_ERROR, text="OK"};
 	function GROUP_PARSE_ERROR.BTN_BACK:onClick()
 		GROUP_PARSE_ERROR:hide(); GROUP_PARSE_ERROR.active = false;
-	end 
+	end
+	
+	GROUP_EXPORT_SUCCESS = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_EXPORT_SUCCESS:hide();
+	GROUP_EXPORT_SUCCESS.ELM_BODY = GuiElement:new{x=0,y=0,width=450,height=130,parent=GROUP_EXPORT_SUCCESS, text="Successfully exported!\n\nRemember to back up your work frequently. This program is very unstable!"};
+	GROUP_EXPORT_SUCCESS.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_EXPORT_SUCCESS, text="OK"};
+	function GROUP_EXPORT_SUCCESS.BTN_BACK:onClick()
+		GROUP_EXPORT_SUCCESS:hide(); openGUIWindow( GROUP_TOPBAR );
+	end
 	
 	openGUIWindow(GROUP_TOPBAR);
 	GROUP_PTRN_EDIT:hide();
