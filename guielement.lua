@@ -124,6 +124,8 @@ function GuiElement:update()
 			
 			self.dispx = self.x + self.padding; self.dispy = self.y + self.padding;
 		end
+	else
+		self.dispx = self.x + self.padding; self.dispy = self.y + self.padding;
 	end
 	
 	-- This fills up an element based on the size of the children elements inside it:

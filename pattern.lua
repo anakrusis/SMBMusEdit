@@ -1,5 +1,6 @@
 Pattern = {
 	-- access into the rom from these values
+	ptr_index          = nil,
 	header_start_index = nil,
 	pulse2_start_index = nil,
 	tri_start_index    = nil,

@@ -6,6 +6,7 @@ require "playback"
 require "render"
 require "guielement"
 require "gui"
+local utf8 = require("utf8")
 
 function love.load()
 	
@@ -105,6 +106,14 @@ function parseAllSongs()
 	end
 end
 
+function love.textinput(t)
+    if selectedTextBox then
+		if selectedTextBox.maxlen > #selectedTextEntry then
+			selectedTextEntry = selectedTextEntry .. t;
+		end
+	end
+end
+
 function love.filedropped(file)
 	rom = ROM:new();
 	rom:import(file);
@@ -116,14 +125,32 @@ function love.filedropped(file)
 end
 
 function love.keypressed(key)
-	if key == "space" or key == "return" then
-		local ptrn = songs[selectedSong].patterns[selectedPattern];
-		if not ptrn then return end
-		
-		playing = not playing;
-		playpos = 0; songpos = ptrn.starttime;
-		playingPattern = selectedPattern;
-		if (not playing) then stop(); end
+	if selectedTextEntry then
+		if key == "return" then
+			selectedTextBox:onCommit();
+			selectedTextBox = nil;
+			selectedTextEntry = nil;
+		end
+		if key == "backspace" then
+        -- get the byte offset to the last UTF-8 character in the string.
+			local byteoffset = utf8.offset(selectedTextEntry, -1)
+
+			if byteoffset then
+				-- remove the last UTF-8 character.
+				-- string.sub operates on bytes rather than UTF-8 characters, so we couldn't do string.sub(text, 1, -2).
+				selectedTextEntry = string.sub(selectedTextEntry, 1, byteoffset - 1)
+			end
+		end
+	else
+		if key == "space" or key == "return" then
+			local ptrn = songs[selectedSong].patterns[selectedPattern];
+			if not ptrn then return end
+			
+			playing = not playing;
+			playpos = 0; songpos = ptrn.starttime;
+			playingPattern = selectedPattern;
+			if (not playing) then stop(); end
+		end
 	end
 end
 

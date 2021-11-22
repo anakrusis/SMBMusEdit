@@ -13,6 +13,10 @@ function initGUI()
 	DRAGGING_NOTE = nil;
 	PTRN_END_DRAGGING = false;
 	
+	-- string for editing
+	selectedTextEntry = nil;
+	selectedTextBox   = nil;
+	
 	elements = {};
 	
 	CHANNEL_COLORS = {};
@@ -93,10 +97,14 @@ function initGUI()
 		end
 	end
 	
-	GROUP_EDIT = GuiElement:new{x=97, y=55, width=500, height=3, name="edit_container", autopos = "left", autosize = true}; GROUP_EDIT:hide();
-	local optimize = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_EDIT, name="optimize", text="Optimize..."};
+	GROUP_EDIT = GuiElement:new{x=97, y=55, width=500, height=3, name="edit_container", autopos = "top", autosize = true}; GROUP_EDIT:hide();
+	local optimize = GuiElement:new{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="optimize", text="Optimize..."};
 	function optimize:onClick()
 		openGUIWindow( GROUP_OPTIMIZE );
+	end
+	local ptredit = GuiElement:new{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="ptredit", text="Pointer Edit..."};
+	function ptredit:onClick()
+		openGUIWindow( GROUP_PNTR_EDIT );
 	end
 	
 	GROUP_OPTIMIZE = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_OPTIMIZE:hide();
@@ -144,8 +152,7 @@ function initGUI()
 			table.insert(self.text, 10, "Noise:   $" ..  string.format("%02X", ptrn.noise_start_index ) .. "\n");
 		end
 	end
-	function optimize:onRender()
-		
+	function optimize:onRender()	
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
 		
@@ -189,7 +196,7 @@ function initGUI()
 			end
 		end			
 	end
-	GROUP_OPTIMIZE.BTN_ALLOCATE = GuiElement:new{x=0,y=0,width=375,height=50,parent=GROUP_OPTIMIZE, text="Allocate Unused Bytes"};
+	GROUP_OPTIMIZE.BTN_ALLOCATE = GuiElement:new{x=0,y=0,width=375,height=50,parent=GROUP_OPTIMIZE, text="Allocate Unused Byte"};
 	function GROUP_OPTIMIZE.BTN_ALLOCATE:onClick()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
@@ -199,6 +206,38 @@ function initGUI()
 	GROUP_OPTIMIZE.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_OPTIMIZE, text="Back"};
 	function GROUP_OPTIMIZE.BTN_BACK:onClick()
 		GROUP_EDIT:hide(); GROUP_OPTIMIZE:hide(); openGUIWindow( GROUP_TOPBAR );
+	end
+	
+	GROUP_PNTR_EDIT = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_PNTR_EDIT:hide();
+	local pointeredit = GuiElement:new{x=0,y=0,width=600,height=400,parent=GROUP_PNTR_EDIT, text=""};
+	function pointeredit:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local infostr = "Current Pattern: ";
+		infostr = infostr .. ptrn:getName();
+		infostr = infostr .. "\n\n---\n\nPtr to Header:     + $791D = $" .. string.format("%04X", ptrn.header_start_index);
+		self.text = infostr;
+	end
+	
+	local pointer = GuiElement:new{x=0,y=0,width=65,height=50,parent=pointeredit, text="5E", staticposition = true, maxlen = 2};
+	function pointer:onUpdate()
+		self.x = pointeredit.dispx + 250;
+		self.y = pointeredit.dispy + 75;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		end
+	end
+	function pointer:onClick()
+		selectedTextBox = self;
+		selectedTextEntry = self.text;
+	end
+	function pointer:onCommit()
+		local hex = tonumber(self.text,16);
+	end
+	
+	GROUP_PNTR_EDIT.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_PNTR_EDIT, text="Back"};
+	function GROUP_PNTR_EDIT.BTN_BACK:onClick()
+		GROUP_EDIT:hide(); GROUP_PNTR_EDIT:hide(); openGUIWindow( GROUP_TOPBAR );
 	end
 	
 	openGUIWindow(GROUP_TOPBAR);

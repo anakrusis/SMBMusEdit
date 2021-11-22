@@ -51,6 +51,7 @@ function Song:parse()
 		p.patternindex = i;
 		p.hasNoise  = self.hasNoise;
 		p.hasPulse1 = self.hasPulse1;
+		p.ptr_index = self.ptr_start_index + i;
 	
 		local ptr = rom:get( self.ptr_start_index + i ); --print( string.format( "%02X", ptr ));
 		local header_start_index = MUSIC_STRT_INDEX + ptr;
