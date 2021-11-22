@@ -625,6 +625,8 @@ function Pattern:parseNotes(start_index, target_table)
 		end
 		
 		local b = rom.data[ind]; -- byte object
+		if not b then return false end
+		
 		table.insert(b.song_claims, self.songindex);
 		table.insert(b.ptrn_claims, self.patternindex);
 		if target_table == self.tri_notes then
@@ -758,6 +760,8 @@ function Pattern:parse( hdr_strt_ind )
 	
 	-- Duration of pattern is decided by the length of the pulse 2 channel
 	self.duration = self:parseNotes(self.pulse2_start_index, self.pulse2_notes);
+	if not self.duration then return false end
+	
 	self:parseNotes(self.tri_start_index, self.tri_notes);
 	
 	if (self.hasPulse1) then

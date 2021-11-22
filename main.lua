@@ -95,11 +95,28 @@ function parseAllSongs()
 		byt.ptrn_claims = {};
 		byt.chnl_claims = {};
 	end
-
+	
+	local errorcaught = false;
+	local errortext = "Errors occurred during the parsing of these songs:\n\n";
+	
 	-- then parses the songs all
 	for i = 0, SONG_COUNT - 1 do
-		local s = songs[i]; s:parse();
+		local s = songs[i]; 
+		local success = s:parse();
+		
+		if not success then
+			errortext = errortext .. s.name .. "\n"
+			errorcaught = true;
+		end
 	end
+	if errorcaught then
+		errortext = errortext .. "\nPlease ensure that all pointers are properly placed, and that this is a functioning game file."
+		GROUP_PARSE_ERROR.ELM_BODY.text = errortext;
+		GROUP_PARSE_ERROR:show();
+		GROUP_PARSE_ERROR.active = true;
+		return;
+	end
+	
 	-- after parsing is done we count the used bytes
 	for i = 0, SONG_COUNT - 1 do
 		local s = songs[i]; s:countBytes();
@@ -150,6 +167,15 @@ function love.keypressed(key)
 			playpos = 0; songpos = ptrn.starttime;
 			playingPattern = selectedPattern;
 			if (not playing) then stop(); end
+		end
+		if key == "escape" then
+			for i = #elements, 1, -1 do
+				local e = elements[i];
+				if (e.active and not e.parent and e.BTN_BACK) then
+					e.BTN_BACK:onClick();
+					break;
+				end
+			end
 		end
 	end
 end

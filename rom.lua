@@ -8,6 +8,7 @@ ROM = {
 
 -- bytes
 function ROM:get(ind)
+	if not self.data[ind] then return false end
 	return self.data[ind].val;
 end
 function ROM:put(ind,value)

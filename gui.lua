@@ -84,27 +84,45 @@ function initGUI()
 	local export = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_FILE, name="export", text="Export ROM"};
 	function export:onClick()
 		if (rom.path) then
-			GROUP_FILE:hide(); openGUIWindow(GROUP_TOPBAR);
 			--rom:export("smbmusedit-2/mario.nes");
 			rom:export(rom.path);
+			GROUP_FILE:hide(); openGUIWindow(GROUP_TOPBAR);
 		end
 	end
 	function export:onUpdate()
 		if (rom.path) then
 			self.text_color = {1,1,1};
 		else
-			self.text_color = {0.3,0.3,0.3};
+			self.text_color = {0.5,0.5,0.5};
 		end
 	end
 	
 	GROUP_EDIT = GuiElement:new{x=97, y=55, width=500, height=3, name="edit_container", autopos = "top", autosize = true}; GROUP_EDIT:hide();
 	local optimize = GuiElement:new{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="optimize", text="Optimize..."};
 	function optimize:onClick()
-		openGUIWindow( GROUP_OPTIMIZE );
+		if (rom.path) then
+			openGUIWindow( GROUP_OPTIMIZE );
+		end
+	end
+	function optimize:onUpdate()
+		if (rom.path) then
+			self.text_color = {1,1,1};
+		else
+			self.text_color = {0.5,0.5,0.5};
+		end
 	end
 	local ptredit = GuiElement:new{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="ptredit", text="Pointer Edit..."};
 	function ptredit:onClick()
-		openGUIWindow( GROUP_PNTR_EDIT );
+		if (rom.path) then
+			openGUIWindow( GROUP_PNTR_EDIT );
+		end
+	end
+	function ptredit:onUpdate()
+		if (rom.path) then
+			self.text_color = {1,1,1};
+		else
+			self.text_color = {0.5,0.5,0.5};
+		end
 	end
 	
 	GROUP_OPTIMIZE = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_OPTIMIZE:hide();
@@ -209,7 +227,7 @@ function initGUI()
 	end
 	
 	GROUP_PNTR_EDIT = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_PNTR_EDIT:hide();
-	local pointeredit = GuiElement:new{x=0,y=0,width=600,height=400,parent=GROUP_PNTR_EDIT, text=""};
+	local pointeredit = GuiElement:new{x=0,y=0,width=620,height=400,parent=GROUP_PNTR_EDIT, text=""};
 	function pointeredit:onUpdate()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
@@ -219,12 +237,16 @@ function initGUI()
 		self.text = infostr;
 	end
 	
-	local pointer = GuiElement:new{x=0,y=0,width=65,height=50,parent=pointeredit, text="5E", staticposition = true, maxlen = 2};
+	local pointer = GuiElement:new{x=0,y=0,width=65,height=50,parent=pointeredit, text="", staticposition = true, maxlen = 2};
 	function pointer:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
 		self.x = pointeredit.dispx + 250;
 		self.y = pointeredit.dispy + 75;
 		if selectedTextEntry and selectedTextBox == self then
 			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%02X", rom:get(ptrn.ptr_index));
 		end
 	end
 	function pointer:onClick()
@@ -232,7 +254,11 @@ function initGUI()
 		selectedTextEntry = self.text;
 	end
 	function pointer:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
 		local hex = tonumber(self.text,16);
+		rom:put( ptrn.ptr_index, hex )
+		parseAllSongs();
 	end
 	
 	GROUP_PNTR_EDIT.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_PNTR_EDIT, text="Back"};
@@ -240,11 +266,21 @@ function initGUI()
 		GROUP_EDIT:hide(); GROUP_PNTR_EDIT:hide(); openGUIWindow( GROUP_TOPBAR );
 	end
 	
+	GROUP_PARSE_ERROR = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_PARSE_ERROR:hide();
+	GROUP_PARSE_ERROR.ELM_BODY = GuiElement:new{x=0,y=0,width=450,height=350,parent=GROUP_PARSE_ERROR, text=""};
+	GROUP_PARSE_ERROR.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_PARSE_ERROR, text="OK"};
+	function GROUP_PARSE_ERROR.BTN_BACK:onClick()
+		GROUP_PARSE_ERROR:hide(); GROUP_PARSE_ERROR.active = false;
+	end 
+	
 	openGUIWindow(GROUP_TOPBAR);
 	GROUP_PTRN_EDIT:hide();
 end
 
 function openGUIWindow( element )
+	selectedTextBox = nil;
+	selectedTextEntry = nil;
+	
 	-- sets the previous outermost element to inactive
 	for i = 1, #elements do
 		local e = elements[i];
@@ -266,7 +302,7 @@ function openGUIWindow( element )
 end
 
 function clickGUI(x,y)
-	for i = 1, #elements do
+	for i = #elements, 1, -1 do
 		local e = elements[i];
 		if ((e.active or e.bypassActiveForClicks) and not e.parent) then
 			e:click(x,y);

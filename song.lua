@@ -55,10 +55,14 @@ function Song:parse()
 	
 		local ptr = rom:get( self.ptr_start_index + i ); --print( string.format( "%02X", ptr ));
 		local header_start_index = MUSIC_STRT_INDEX + ptr;
-		duration = duration + p:parse( header_start_index );
+		local cpd = p:parse( header_start_index ); -- current pattern duration
+		if not cpd then return false end
+		
+		duration = duration + cpd;
 		
 		self.patterns[i] = p;
 	end
+	return true;
 end
 
 -- this step must be done after all parsing is complete
