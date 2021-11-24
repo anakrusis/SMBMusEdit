@@ -113,10 +113,8 @@ function renderOverlap()
 	for i = 0, #notes do
 		local note = notes[i];
 		local currentbyte = rom.data[note.rom_index];
-		
-		local curr_songs = {}
-		local curr_ptrns = {}
-		local curr_chnls = {}
+		local hasOverlap = false;
+		local txt = "--Overlap-->\n\n"
 		
 		for q = 1, #currentbyte.song_claims do
 			local csc = currentbyte.song_claims[q];
@@ -126,10 +124,13 @@ function renderOverlap()
 			-- The overlap display will only appear on the first note that is overlapping
 			-- so it won't show up if its already been put on
 			local alreadyseen = false;
+			local alreadyseenSong = false;
 			for r = 1, #seen_songs do
 				if seen_songs[r] == csc and seen_ptrns[r] == cpc and seen_chnls[r] == ccc then 
 					alreadyseen = true;
 					break;
+				elseif seen_songs[r] == csc then
+					alreadyseenSong = true;
 				end
 			end
 			
@@ -138,16 +139,24 @@ function renderOverlap()
 				local claimedptrn = claimedsong.patterns[cpc];
 				
 				if claimedptrn:getStartIndex(ccc) > ptrn:getStartIndex(selectedChannel) then
-					love.graphics.setColor(CHANNEL_COLORS[ccc])
-					local linex = pianoroll_trax( note.starttime );
-					love.graphics.line(linex,DIVIDER_POS,linex,WINDOW_HEIGHT);
+					local r = 0.50 + CHANNEL_COLORS[ccc][1];
+					local g = 0.50 + CHANNEL_COLORS[ccc][2];
+					local b = 0.50 + CHANNEL_COLORS[ccc][3];
+					love.graphics.setColor(r,g,b);
 					
-					local txt = "--Overlap-->\n\n"
-					txt = txt .. claimedsong.name .. "\n" .. ccc
-					love.graphics.print(txt, linex + 4, DIVIDER_POS + 24);
+					if not alreadyseenSong then
+						txt = txt .. claimedsong.name .. "\n" .. ccc .. "\n\n"
+					end
+					hasOverlap = true;
 					table.insert(seen_songs, csc); table.insert(seen_ptrns, cpc); table.insert(seen_chnls, ccc);
 				end
 			end
+		end
+		
+		if hasOverlap then
+			local linex = pianoroll_trax( note.starttime );
+			dashLine({x=linex,y=DIVIDER_POS},{x=linex,y=WINDOW_HEIGHT},8,8);
+			love.graphics.print(txt, linex + 4, DIVIDER_POS + 24);
 		end
 	end
 end
@@ -165,4 +174,22 @@ function renderSidePiano()
 		end
 		love.graphics.rectangle( "fill", 0, keyy, SIDE_PIANO_WIDTH, PIANOROLL_ZOOMY )
 	end
+end
+
+-- This function was written by Ref on the love2d forums:
+-- https://love2d.org/forums/viewtopic.php?t=83295
+function dashLine( p1, p2, dash, gap )
+	local gr = love.graphics;
+   local dy, dx = p2.y - p1.y, p2.x - p1.x
+   local an, st = math.atan2( dy, dx ), dash + gap
+   local len	 = math.sqrt( dx*dx + dy*dy )
+   local nm	 = ( len - dash ) / st
+   gr.push()
+      gr.translate( p1.x, p1.y )
+      gr.rotate( an )
+      for i = 0, nm do
+         gr.line( i * st, 0, i * st + dash, 0 )
+      end
+      gr.line( nm * st, 0, nm * st + dash,0 )
+   gr.pop()
 end
