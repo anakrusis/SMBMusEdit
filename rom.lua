@@ -238,3 +238,13 @@ function Byte:hasSongPatternClaim(song,ptrn)
 	end
 	return false;
 end
+
+-- if this byte is claimed by a song, pattern and channel OTHER than the one specified
+function Byte:hasClaimOutside(song,ptrn,chnl)
+	for i = 1, #self.song_claims do
+		if self.song_claims[i] ~= song or self.ptrn_claims[i] ~= ptrn or self.chnl_claims[i] ~= chnl then
+			return true;
+		end
+	end
+	return false;
+end

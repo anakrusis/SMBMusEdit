@@ -127,6 +127,19 @@ function parseAllSongs()
 	for i = 0, SONG_COUNT - 1 do
 		local s = songs[i]; s:countBytes();
 	end
+	-- and the number of used patterns of overworld music will be counted as well:
+	-- (The overworld theme is always the last one)
+	local overworld = songs[#songs];
+	
+	local last_nonempty_ptrn_ind = 0;
+	for i = 0, overworld.patternCount - 1 do
+		local p = overworld.patterns[i];
+		if p.duration > 0 then
+			last_nonempty_ptrn_ind = i;
+		end
+	end
+	-- Plus one because it is counting the total number of patterns, plus 0x11 because (I don't know why)
+	rom:put(0x76f6, last_nonempty_ptrn_ind + 0x11 + 1)
 end
 
 function love.textinput(t)
@@ -142,7 +155,6 @@ function love.filedropped(file)
 	rom:import(file);
 	initPitchTables();
 	initRhythmTables();
-	parseAllSongs();
 	selectSong(16);
 	openGUIWindow(GROUP_TOPBAR);
 end
@@ -209,8 +221,7 @@ function love.mousepressed( x,y,button )
 			-- initiates dragging for pattern endpoint changing
 			if love.mouse.getY() < DIVIDER_POS + PIANOROLL_TOPBAR_HEIGHT then
 				local enddist = math.abs( tick - ptrn.duration );
-				if enddist < 16 then
-					print("dragging end point");
+				if enddist < 16 and ( selectedChannel == "pulse2" or selectedChannel == "noise" ) then
 					PTRN_END_DRAGGING = true;
 				end
 				
@@ -289,7 +300,7 @@ function love.mousemoved( x, y, dx, dy, istouch )
 		-- Dragging pattern length 
 		if love.mouse.getY() < DIVIDER_POS + PIANOROLL_TOPBAR_HEIGHT then
 			local enddist = math.abs( tick - ptrn.duration );
-			if enddist < 16 then
+			if enddist < 16 and ( selectedChannel == "pulse2" or selectedChannel == "noise" ) then
 				love.mouse.setCursor( CURSOR_HORIZ )
 			end
 		elseif love.mouse.getX() > SIDE_PIANO_WIDTH then
@@ -380,6 +391,8 @@ function love.draw()
 	
 	if (ptrn) then
 		renderChannel( ptrn:getNotes(selectedChannel), CHANNEL_COLORS[selectedChannel]);
+		
+		renderOverlap()
 	end
 	
 	-- play line
