@@ -60,6 +60,7 @@ end
 function Pattern:changeEndpoint(tick, channel)
 	if channel ~= "pulse2" and channel ~= "noise" then return end
 	local notes = self:getNotes(channel);
+	if not notes[0] then return end
 	
 	local lastnotebefore = nil;
 	local lastdurbefore = 0;

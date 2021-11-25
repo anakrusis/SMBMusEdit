@@ -342,11 +342,13 @@ end
 function love.update(dt)
 	WINDOW_WIDTH, WINDOW_HEIGHT, flags = love.window.getMode();
 	
-	--local zeromark = ((0 - PIANOROLL_SCROLLX) * PIANOROLL_ZOOMX) + WINDOW_WIDTH / 2;
+	-- pianoroll left-side limit
 	local zeromark = ((WINDOW_WIDTH / 2) / PIANOROLL_ZOOMX)
 	PIANOROLL_SCROLLX = math.max( PIANOROLL_SCROLLX, zeromark )
-	
 	PIANOROLL_ZOOMX = math.max(1, PIANOROLL_ZOOMX);
+	-- pattern editor left-side limit
+	--zeromark = ((WINDOW_WIDTH / 2) / PATTERN_SCROLL)
+	PATTERN_SCROLL = math.max( PATTERN_SCROLL, 0 )
 	
 	updateGUI();
 	frameCount = frameCount + 1;

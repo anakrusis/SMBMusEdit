@@ -14,8 +14,8 @@ function ROM:get(ind)
 	return self.data[ind].val;
 end
 function ROM:put(ind,value)
-	-- todo maybe return an error or something if inputted value exceeds 0xff
-	self.data[ind].val = value;
+	-- modulos if the value exceeds 0xff
+	self.data[ind].val = value % 0x100;
 end
 
 -- little-endian words, index refers to first byte
@@ -139,7 +139,9 @@ function ROM:export(path)
 	local output = ""
 	local file = io.open(path, "wb")
 	for i = 0, table.getn(self.data) do 
-		output = output .. string.char(self.data[i].val)
+		local val = self.data[i].val;
+		val = val % 0x100;
+		output = output .. string.char(val)
 	end
 	file:write(output)
 	file:close()
