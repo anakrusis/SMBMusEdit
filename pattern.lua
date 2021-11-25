@@ -416,12 +416,32 @@ function Pattern:allocateUnusedBytes(chnl)
 	end
 		
 	strt = self:getStartIndex(chnl);
-	-- last index, the index after which a new empty byte will be inserted
-	lastind = strt + self:getBytesAvailable(chnl); 
-
-	--rom.data[lastind].insert_before = 0xff;
-	--rom.data[ind].delete = true;
-	--rom:commitMarkers();
+	-- last index, the index before which a new empty byte will be inserted
+	local lastind = strt + self:getBytesAvailable(chnl);
+	-- When calculating the last index, we will take into account any overlapping channels, so as to not disturb the data of another songs/patterns/channels in the allocation process. 
+	-- Whichever comes first, the end of the available bytes, or the end of non-overlapping bytes, will become lastind
+	local hasOverlap = false;
+	for j = strt, strt + self:getBytesAvailable(chnl) - 1 do
+		local currentbyte = rom.data[j];
+		for q = 1, #currentbyte.song_claims do
+			local csc = currentbyte.song_claims[q];
+			local cpc = currentbyte.ptrn_claims[q];
+			local ccc = currentbyte.chnl_claims[q];
+			
+			if (csc ~= self.songindex or cpc ~= self.patternindex or ccc ~= chnl) then
+				local claimedsong = songs[csc];
+				local claimedptrn = claimedsong.patterns[cpc];
+				if claimedptrn:getStartIndex(ccc) > strt then 
+					lastind = j;
+					hasOverlap = true;
+					print("has overlap at $" .. string.format("%04X", j));
+					break;
+				end
+			end
+		end
+		
+		if hasOverlap then break end
+	end
 	
 	newbyte = Byte:new{ val = 0xff }
 	table.insert( rom.data, lastind, newbyte )
@@ -461,16 +481,6 @@ function Pattern:allocateUnusedBytes(chnl)
 			end
 		end
 	end
-	
-	-- self:adjustInternalPointers(lastind, ind);
-	
-	-- -- if transferring within the same ptrn, the pointers are only done on that one ptrn once.
-	-- -- otherwise, the internal pointers of boths ptrn must be fixed
-	-- if (oldsongind ~= self.songindex and oldptrnind ~= self.patternindex) then
-		-- local oldsong = songs[oldsongind];
-		-- local oldptrn = oldsong.patterns[oldptrnind];
-		-- oldptrn:adjustInternalPointers(lastind, ind);
-	-- end
 	
 	parseAllSongs();
 end
