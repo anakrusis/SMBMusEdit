@@ -221,7 +221,11 @@ function love.mousepressed( x,y,button )
 			-- initiates dragging for pattern endpoint changing
 			if love.mouse.getY() < DIVIDER_POS + PIANOROLL_TOPBAR_HEIGHT then
 				local enddist = math.abs( tick - ptrn.duration );
-				if enddist < 16 and ( selectedChannel == "pulse2" or selectedChannel == "noise" ) then
+				if enddist < 16 and ( selectedChannel == "pulse2") then
+					PTRN_END_DRAGGING = true;
+				end
+				enddist = math.abs( tick - ptrn.noiseduration );
+				if enddist < 16 and ( selectedChannel == "noise") then
 					PTRN_END_DRAGGING = true;
 				end
 				
@@ -300,9 +304,14 @@ function love.mousemoved( x, y, dx, dy, istouch )
 		-- Dragging pattern length 
 		if love.mouse.getY() < DIVIDER_POS + PIANOROLL_TOPBAR_HEIGHT then
 			local enddist = math.abs( tick - ptrn.duration );
-			if enddist < 16 and ( selectedChannel == "pulse2" or selectedChannel == "noise" ) then
+			if enddist < 16 and ( selectedChannel == "pulse2") then
 				love.mouse.setCursor( CURSOR_HORIZ )
 			end
+			enddist = math.abs( tick - ptrn.noiseduration );
+			if enddist < 16 and ( selectedChannel == "noise") then
+				love.mouse.setCursor( CURSOR_HORIZ )
+			end
+			
 		elseif love.mouse.getX() > SIDE_PIANO_WIDTH then
 			local note = math.ceil(piano_roll_untray(y));
 			local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
@@ -380,6 +389,8 @@ function selectSong(index)
 		
 		love.window.setTitle(rom.filename .. " [" .. songs[index].name .. "] - " .. VERSION_NAME)
 	end
+	PATTERN_SCROLL = 0;
+	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0;
 end
 
 function love.draw()
@@ -399,14 +410,23 @@ function love.draw()
 	
 	-- play line
 	if (playingPattern == selectedPattern) then
+		local linepos = playpos;
+		if selectedChannel == "noise" then
+			linepos = linepos % ptrn.noiseduration;
+		end
 		love.graphics.setColor( 1,0,0 );
-		local linex = pianoroll_trax(playpos);
+		local linex = pianoroll_trax(linepos);
 		love.graphics.line(linex,DIVIDER_POS,linex,WINDOW_HEIGHT);
 	end
 	
+	-- top bar (pattern length indicator)
 	if selectedChannel == "pulse2" and ptrn then
 		love.graphics.setColor( CHANNEL_COLORS[selectedChannel] );
 		love.graphics.rectangle("fill",pianoroll_trax(0),DIVIDER_POS,pianoroll_trax(ptrn.duration)-pianoroll_trax(0),PIANOROLL_TOPBAR_HEIGHT);
+	end
+	if selectedChannel == "noise" and ptrn then
+		love.graphics.setColor( CHANNEL_COLORS[selectedChannel] );
+		love.graphics.rectangle("fill",pianoroll_trax(0),DIVIDER_POS,pianoroll_trax(ptrn.noiseduration)-pianoroll_trax(0),PIANOROLL_TOPBAR_HEIGHT);
 	end
 	renderSidePiano();
 	

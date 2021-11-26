@@ -62,9 +62,12 @@ function renderChannel( notes, color )
 	-- end
 	local ptrn = songs[selectedSong].patterns[selectedPattern];
 	local qnd = ptrn.quarter_note_duration;
+	local dur;
+	if selectedChannel == "noise" then dur = ptrn.noiseduration else dur = ptrn.duration end
+	
 	-- ...and draws them here
 	if qnd ~= 0 then
-		for i = 0, (ptrn.duration / (qnd/4)) do
+		for i = 0, (dur / (qnd/4)) do
 			if i % 4 == 0 then
 				love.graphics.setColor(0,0,0,1);
 			else
@@ -96,7 +99,6 @@ function renderChannel( notes, color )
 	
 	-- end of pattern line
 	love.graphics.setColor( 0.0,0.0,0.0 );
-	local dur = songs[selectedSong].patterns[selectedPattern].duration;
 	local endx = pianoroll_trax(dur);
 	love.graphics.line(endx,DIVIDER_POS,endx,WINDOW_HEIGHT);
 end

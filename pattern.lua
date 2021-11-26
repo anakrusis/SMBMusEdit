@@ -105,12 +105,14 @@ end
 function Pattern:appendNote(midinote, tick, channel)
 
 	local newval;
-	if (channel == "pulse2" or channel == "pulse1" or channel == "noise") then
+	if (channel == "pulse2" or channel == "noise") then
 		newval = PITCH_VALS[midinote];
+	else
+		return;
 	end
-	if (channel == "tri") then
-		newval = PITCH_VALS[midinote + 12];
-	end
+	-- if (channel == "tri") then
+		-- newval = PITCH_VALS[midinote + 12];
+	-- end
 	
 	if (not newval) then
 		popupText("Can't append unavailable pitch!", {1,1,1});
@@ -118,18 +120,21 @@ function Pattern:appendNote(midinote, tick, channel)
 	end
 
 	local bytecost = 1;
-	if (channel == "pulse1" or channel == "noise") then
+	local strt = self:getStartIndex(channel);
+	local curind = strt + self:getBytesUsed(channel) - 1;
+	-- This is because a note appended after the data terminator will not be seen
+	if (rom.data[curind].val == 0x00) then curind = curind - 1; end
 	
+	local cb = rom.data[curind];
+	local cv = cb.val;
+	print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
+	
+	if (channel == "noise") then
+		local rhythm = bitwise.band(cv, 0xc1);     -- 1100 0001
+		local pitch  = bitwise.band(newval, 0x3e); -- 0011 1110
+		
+		cb.insert_after = rhythm + pitch;
 	else
-		local strt = self:getStartIndex(channel);
-		local curind = strt + self:getBytesUsed(channel) - 1;
-		-- This is because a note appended after the data terminator will not be seen
-		if (rom.data[curind].val == 0x00) then curind = curind - 1; end
-		
-		local cb = rom.data[curind]
-		local cv = cb.val;
-		--print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
-		
 		cb.insert_after = newval;
 	end
 
@@ -333,11 +338,13 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		if bytecost == 0 then break; end
 	
 		local strt = self:getStartIndex(channel);
+		local lastind = self:getLastIndex(channel);
 		local curind;
 		
 		-- positive bytecost: bytes will be removed from the end
 		if bytecost > 0 then
-			curind = strt + self:getBytesAvailable(channel) + (bytecost - 1) - i;
+			--curind = strt + self:getBytesAvailable(channel) + (bytecost - 1) - i;
+			curind = lastind + (bytecost - 1) - i;
 			local cb = temprom.data[curind]
 			local cv = cb.val;
 			print(string.format( "%02X",cv) .. "removed at $" .. string.format( "%04X",curind) );
@@ -347,7 +354,8 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 			
 		-- negative bytecost: bytes will be appended at the end
 		else
-			curind = strt + self:getBytesUsed(channel) + bytecost - 1;
+			--curind = strt + self:getBytesUsed(channel) + bytecost - 1;
+			curind = lastind + (bytecost - 1);
 			local cb = temprom.data[curind]
 			local cv = cb.val;
 			print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
@@ -417,32 +425,7 @@ function Pattern:allocateUnusedBytes(chnl)
 	end
 		
 	strt = self:getStartIndex(chnl);
-	-- last index, the index before which a new empty byte will be inserted
-	local lastind = strt + self:getBytesAvailable(chnl);
-	-- When calculating the last index, we will take into account any overlapping channels, so as to not disturb the data of another songs/patterns/channels in the allocation process. 
-	-- Whichever comes first, the end of the available bytes, or the end of non-overlapping bytes, will become lastind
-	local hasOverlap = false;
-	for j = strt, strt + self:getBytesAvailable(chnl) - 1 do
-		local currentbyte = rom.data[j];
-		for q = 1, #currentbyte.song_claims do
-			local csc = currentbyte.song_claims[q];
-			local cpc = currentbyte.ptrn_claims[q];
-			local ccc = currentbyte.chnl_claims[q];
-			
-			if (csc ~= self.songindex or cpc ~= self.patternindex or ccc ~= chnl) then
-				local claimedsong = songs[csc];
-				local claimedptrn = claimedsong.patterns[cpc];
-				if claimedptrn:getStartIndex(ccc) > strt then 
-					lastind = j;
-					hasOverlap = true;
-					print("has overlap at $" .. string.format("%04X", j));
-					break;
-				end
-			end
-		end
-		
-		if hasOverlap then break end
-	end
+	local lastind = self:getLastIndex(chnl);
 	
 	newbyte = Byte:new{ val = 0xff }
 	table.insert( rom.data, lastind, newbyte )
@@ -484,6 +467,40 @@ function Pattern:allocateUnusedBytes(chnl)
 	end
 	
 	parseAllSongs();
+end
+
+-- Returns the last index of the pattern, whichever comes first:
+-- the last non-overlapping byte that belongs to the pattern, or the last available byte of the pattern
+function Pattern:getLastIndex(chnl)
+	local strt = self:getStartIndex(chnl);
+	-- last index, the index before which a new empty byte will be inserted
+	local lastind = strt + self:getBytesAvailable(chnl);
+	-- When calculating the last index, we will take into account any overlapping channels, so as to not disturb the data of another songs/patterns/channels in the allocation process. 
+	-- Whichever comes first, the end of the available bytes, or the end of non-overlapping bytes, will become lastind
+	local hasOverlap = false;
+	for j = strt, strt + self:getBytesAvailable(chnl) - 1 do
+		local currentbyte = rom.data[j];
+		for q = 1, #currentbyte.song_claims do
+			local csc = currentbyte.song_claims[q];
+			local cpc = currentbyte.ptrn_claims[q];
+			local ccc = currentbyte.chnl_claims[q];
+			
+			if (csc ~= self.songindex or cpc ~= self.patternindex or ccc ~= chnl) then
+				local claimedsong = songs[csc];
+				local claimedptrn = claimedsong.patterns[cpc];
+				if claimedptrn:getStartIndex(ccc) > strt then 
+					lastind = j;
+					hasOverlap = true;
+					print("has overlap at $" .. string.format("%04X", j));
+					break;
+				end
+			end
+		end
+		
+		if hasOverlap then break end
+	end
+	
+	return lastind;
 end
 
 -- given an Insertion Point of a new byte and a Removal Point of another byte. doesnt matter which comes first in the rom
