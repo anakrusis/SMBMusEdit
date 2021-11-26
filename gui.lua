@@ -33,7 +33,7 @@ function initGUI()
 	function GROUP_TOPBAR2:onUpdate()
 		self.width = WINDOW_WIDTH;
 	end
-	local prevsong = GuiElement:new{x=0,y=0,width=50,height=50,parent=GROUP_TOPBAR2, name="prevsong", text="<"};
+	local prevsong = GuiElement:new{x=0,y=0,width=55,height=50,parent=GROUP_TOPBAR2, name="prevsong", text="<S"};
 	function prevsong:onClick()
 		selectSong((selectedSong - 1) % SONG_COUNT);	
 	end
@@ -41,10 +41,21 @@ function initGUI()
 	function currsong:onUpdate()
 		self.text = songs[selectedSong].name;
 	end
-	local nextsong = GuiElement:new{x=0,y=0,width=50,height=50,parent=GROUP_TOPBAR2, name="nextsong", text=">"};
+	local nextsong = GuiElement:new{x=0,y=0,width=55,height=50,parent=GROUP_TOPBAR2, name="nextsong", text="S>"};
 	function nextsong:onClick()
 		selectSong((selectedSong + 1) % SONG_COUNT);
 	end
+	
+	local prevptrn = GuiElement:new{x=0,y=0,width=55,height=50,parent=GROUP_TOPBAR2, name="prevptrn", text="<P"};
+	function prevptrn:onClick()
+		local song = songs[selectedSong];
+		selectedPattern = ((selectedPattern - 1) % song.patternCount);	
+	end
+	local nextptrn = GuiElement:new{x=0,y=0,width=55,height=50,parent=GROUP_TOPBAR2, name="nextptrn", text="P>"};
+	function nextptrn:onClick()
+		local song = songs[selectedSong];
+		selectedPattern = ((selectedPattern + 1) % song.patternCount);	
+	end 	
 	
 	local file = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="file", text="File"};
 	function file:onClick()
