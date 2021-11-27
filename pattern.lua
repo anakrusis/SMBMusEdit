@@ -286,7 +286,8 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 		-- It also counts the length of the new used portion of notes
 		local newptrnlen = 0;
 		local lastrhythm = 0;
-		for i = self:getStartIndex(channel), self:getStartIndex(channel) + self:getBytesUsed(channel) + bytecost do
+		local lastind = self:getLastIndex(channel) - 1;
+		for i = self:getStartIndex(channel), lastind + bytecost do
 			local cb = temprom.data[i];
 			local cv = cb.val -- current val (of byte)
 			if (cv >= 0x80 and cv <= 0x87) then
@@ -360,7 +361,7 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 			local cv = cb.val;
 			print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
 			
-			cb.insert_after = 0xff;
+			cb.insert_after = 0x04;
 			temprom:commitMarkers(curind,curind);
 		end
 	end
@@ -427,7 +428,7 @@ function Pattern:allocateUnusedBytes(chnl)
 	strt = self:getStartIndex(chnl);
 	local lastind = self:getLastIndex(chnl);
 	
-	newbyte = Byte:new{ val = 0xff }
+	newbyte = Byte:new{ val = 0x04 }
 	table.insert( rom.data, lastind, newbyte )
 	
 	if (lastind <= ind) then ind = ind + 1 end
