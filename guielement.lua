@@ -1,65 +1,123 @@
-GuiElement = {
-	--constructor(x,y,width,height,parent){
+GuiElement = {}; GuiElement.__index = GuiElement;
+function GuiElement.new(x,y,width,height,parent)
+	local self = setmetatable({}, GuiElement);
+	self.x = x;
+	self.y = y;
+	self.width = width;
+	self.height = height;
+	self.padding = 5;
 	
-	-- core properties
-	x = 0,
-	y = 0,
-	width = 100,
-	height = 100,
-	padding = 5,
+	self.dispx = 0;
+	self.dispy = 0;
+	self.dispwidth = 100;
+	self.dispheight = 100;
 	
-	dispx = 0,
-	dispy = 0,
-	dispwidth = 100,
-	dispheight = 100,
+	self.text_color = {1,1,1};
+	self.enable_color  = {1,1,1};
+	self.disable_color = {0.5,0.5,0.5};
+	self.bg_color   = {0,0,0};
 	
-	text_color = {1,1,1},
-	bg_color   = {0,0,0},
+	self.active = true;
+	self.bypassActiveForClicks = false; -- a few elements bypass the parents activity for click elements, such as the zoom buttons
+	self.visible = true;
+	self.transparent = false;
+	self.ticksShown = 0;
+	self.holdclick = false; -- If true, it will trigger the click event every tick that it is held, instead of just once at the beginning
 	
-	active = true,
-	bypassActiveForClicks = false, -- a few elements bypass the parents activity for click elements, such as the zoom buttons
-	visible = true,
-	transparent = false,
-	ticksShown = 0,
-	holdclick = false, -- If true, it will trigger the click event every tick that it is held, instead of just once at the beginning
+	self.autopos = "top"; -- float property
+	self.autosize = false; -- will fill up to the size of its children elements
+	self.autosizex = false;
+	self.autosizey = false;
 	
-	autopos = "top", -- float property
-	autosize = false, -- will fill up to the size of its children elements
-	autosizex = false,
-	autosizey = false,
+	self.staticposition = false; -- will not affect the size of autosize parent
 	
-	staticposition = false, -- will not affect the size of autosize parent
+	self.autocenterX = false; -- will center to middle of screen (best for popup windows, or also some HUD stuff)
+	self.autocenterY = false;
 	
-	autocenterX = false, -- will center to middle of screen (best for popup windows, or also some HUD stuff)
-	autocenterY = false,
-	
-	name = "",
-	text = "",
-	disptext = "",
+	self.name = "";
+	self.text = "";
+	self.disptext = "";
 	
 	-- referential properties
-	parent = nil,
-	children = {},
-}
-
-function GuiElement:new(o)
-	o = o or {}
-	setmetatable(o, self)
-	self.__index = self
+	self.parent = parent;
+	self.children = {};
 	
-	o.children = {};
-	
-	if (o.parent) then
+	if (parent) then
 		--print( o.name .. " added to " .. o.parent.name);
-		o.parent:appendElement( o );
+		parent:appendElement( self );
 	else
 		--elements.push(this);
 		--print( o.name .. " added to elements " );
-		table.insert(elements, o);
+		table.insert(elements, self);
 	end
 	
-	return o
+	return self;
 end
+
+-- GuiElement = {
+	-- --constructor(x,y,width,height,parent){
+	
+	-- -- core properties
+	-- x = 0,
+	-- y = 0,
+	-- width = 100,
+	-- height = 100,
+	-- padding = 5,
+	
+	-- dispx = 0,
+	-- dispy = 0,
+	-- dispwidth = 100,
+	-- dispheight = 100,
+	
+	-- text_color = {1,1,1},
+	-- enable_color  = {1,1,1},
+	-- disable_color = {0.5,0.5,0.5},
+	-- bg_color   = {0,0,0},
+	
+	-- active = true,
+	-- bypassActiveForClicks = false, -- a few elements bypass the parents activity for click elements, such as the zoom buttons
+	-- visible = true,
+	-- transparent = false,
+	-- ticksShown = 0,
+	-- holdclick = false, -- If true, it will trigger the click event every tick that it is held, instead of just once at the beginning
+	
+	-- autopos = "top", -- float property
+	-- autosize = false, -- will fill up to the size of its children elements
+	-- autosizex = false,
+	-- autosizey = false,
+	
+	-- staticposition = false, -- will not affect the size of autosize parent
+	
+	-- autocenterX = false, -- will center to middle of screen (best for popup windows, or also some HUD stuff)
+	-- autocenterY = false,
+	
+	-- name = "",
+	-- text = "",
+	-- disptext = "",
+	
+	-- -- referential properties
+	-- parent = nil,
+	-- children = {},
+-- }
+
+-- function GuiElement:new(o)
+	-- o = o or {}
+	-- setmetatable(o, self)
+	-- self.__index = self
+	
+	-- o.children = {};
+	
+	-- if (o.parent) then
+		-- --print( o.name .. " added to " .. o.parent.name);
+		-- o.parent:appendElement( o );
+	-- else
+		-- --elements.push(this);
+		-- --print( o.name .. " added to elements " );
+		-- table.insert(elements, o);
+	-- end
+	
+	-- return o
+-- end
 	
 	-- update() contains most of the auto positioning of text boxes and things, it is an outer layer to the 
 	-- inner layer function onUpdate() which has more personal properties of individual GUI elements
@@ -203,6 +261,11 @@ function GuiElement:update()
 	-- }else{
 		-- this.ticksShown = 0;
 	-- }
+	if not self:getEnabledCondition() then
+		self.text_color = self.disable_color;
+	else
+		self.text_color = self.enable_color;
+	end
 end
 
 -- This is blank by default so each GUI element can have unique per-tick behaviors
@@ -222,16 +285,18 @@ function GuiElement:click(x,y)
 	if (self.visible and (self.active or self.bypassActiveForClicks)) then
 		if (x > self.dispx*GUI_SCALE and x < (self.dispx + self.dispwidth) * GUI_SCALE
 		and y > self.dispy*GUI_SCALE and y < (self.dispy + self.dispheight)* GUI_SCALE ) then
-		
-			self:onClick(); 
-			bypassGameClick = true;
+			
+			if self:getEnabledCondition() then
+				self:onClick(); 
+				bypassGameClick = true;
+			end
 		end
 	end
 end
 	
 -- This one is empty and left to be defined individually
 function GuiElement:onClick()
-	--print (self.name .. " clicked")
+	
 end
 	
 -- Wow this is going back to lua unchanged, truly full circle
@@ -341,4 +406,11 @@ function GuiElement:hide()
 		local e  = self.children[i];
 		e:hide();
 	end
+end
+
+-- This can be considered a final checking condition, even when the gui element is active, visible, etc.
+-- There still may be certain external variables, like the status of the rom or the song,
+-- which might preclude this button from being clickable-- they can be put here.
+function GuiElement:getEnabledCondition()
+	return true;
 end

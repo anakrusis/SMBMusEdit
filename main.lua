@@ -4,8 +4,10 @@ require "rom"
 require "bitwise"
 require "playback"
 require "render"
-require "guielement"
 require "gui"
+require "guielement"
+require "guipattern"
+
 local utf8 = require("utf8")
 
 function love.load()
