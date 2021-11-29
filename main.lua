@@ -13,42 +13,26 @@ local utf8 = require("utf8")
 function love.load()
 	VERSION_NAME = "SMBMusEdit pre-0.1.0a test build #1"
 	
-	SRC_PULSE2 = love.audio.newSource( "square.wav", "static" );
-	SRC_PULSE2:setLooping(true); SRC_PULSE2:setVolume(0.6);
-	SRC_PULSE1 = love.audio.newSource( "square.wav", "static" );
-	SRC_PULSE1:setLooping(true); SRC_PULSE1:setVolume(0.6);
-	SRC_TRI = love.audio.newSource( "tri.wav", "static" );
-	SRC_TRI:setLooping(true);
-	
-	SRC_KICK = love.audio.newSource("kick.wav", "static");
-	SRC_CH   = love.audio.newSource("ch.wav", "static");
-	SRC_OH   = love.audio.newSource("oh.wav", "static");
-	
-	playing = false; playpos = 0; songpos = 0; -- current tick in pattern
-	playingPattern = 0;
-	preview_playing = false; previewtick = 0; previewpitch = 0; -- preview note when placing down
-	
 	selectedChannel = "tri";
 	selectedPattern = 0;
 	selectedSong    = 0;
 	
 	love.window.setTitle(VERSION_NAME);
 	success = love.window.setMode( 800, 800, {resizable=true, minwidth=800, minheight=600} )
+	love.window.setVSync( 1 );
 	WINDOW_WIDTH = 800; WINDOW_HEIGHT = 800;
-	font = love.graphics.newFont("zeldadxt.ttf", 24)
+	font = love.graphics.newFont("assets/zeldadxt.ttf", 24)
 	love.graphics.setFont(font)
 	CURSOR_HORIZ = love.mouse.getSystemCursor( "sizewe" );
 	CURSOR_VERT  = love.mouse.getSystemCursor( "sizens" );
 	
 	frameCount = 0; -- just how many ticks the window has been open
 	
-	rom = ROM:new(); --rom:import("smbmusedit-2/mario.nes");
-	
-	--initPitchTables();
-	--initRhythmTables();
+	rom = ROM:new();
+	PlaybackHandler:initSources();
 	initGUI();
 	
-	
+	-- In the future this can be stored in files of presets for each game's songs
 	SONG_COUNT = 0;
 	songs = {};
 	local s;
@@ -86,10 +70,6 @@ function love.load()
 	ptr_start_index = 0x792c, hasNoise = false, loop = false };
 	s = Song:new{ name = "Overworld",
 	ptr_start_index = 0x792d, hasNoise = true,  loop = true, patternCount = 33 };
-	
-	--parseAllSongs();
-	
-	--selectSong(16);
 end
 
 function parseAllSongs()
@@ -180,13 +160,7 @@ function love.keypressed(key)
 		end
 	else
 		if key == "space" or key == "return" then
-			local ptrn = songs[selectedSong].patterns[selectedPattern];
-			if not ptrn then return end
-			
-			playing = not playing;
-			playpos = 0; songpos = ptrn.starttime;
-			playingPattern = selectedPattern;
-			if (not playing) then stop(); end
+			PlaybackHandler:togglePlaying();
 		end
 		if key == "escape" then
 			for i = #elements, 1, -1 do
@@ -363,13 +337,7 @@ function love.update(dt)
 	
 	updateGUI();
 	frameCount = frameCount + 1;
-	
-	if (playing) then
-		play();
-	end
-	if (preview_playing) then
-		playPreview();
-	end
+	PlaybackHandler:update();
 end
 
 function popupText(text,color)
@@ -383,8 +351,10 @@ function popupText(text,color)
 end
 
 function selectSong(index)
-	stop(); playpos = 0; songpos = 0; selectedSong = index;
-	selectedPattern = 0; selectedChannel = "pulse2";
+	PlaybackHandler:stop(); 
+	PlaybackHandler.playpos = 0; PlaybackHandler.songpos = 0;
+	selectedSong = index; selectedPattern = 0; selectedChannel = "pulse2";
+	
 	if rom.path then
 		parseAllSongs();
 		updatePatternGUI( songs[index] );
@@ -411,12 +381,12 @@ function love.draw()
 	end
 	
 	-- play line
-	if (playingPattern == selectedPattern) then
-		local linepos = playpos;
+	if (PlaybackHandler.playingPattern == selectedPattern) then
+		local linepos = PlaybackHandler.playpos;
 		if selectedChannel == "noise" then
 			linepos = linepos % ptrn.noiseduration;
 		end
-		love.graphics.setColor( 1,0,0 );
+		love.graphics.setColor( 1,1,1 );
 		local linex = pianoroll_trax(linepos);
 		love.graphics.line(linex,DIVIDER_POS,linex,WINDOW_HEIGHT);
 	end
@@ -459,8 +429,13 @@ function love.draw()
 	renderGUI();
 	
 	-- pattern editor play line
-	love.graphics.setColor( 1,0,0 );
-	local linex = ((songpos - PATTERN_SCROLL) * PATTERN_ZOOMX) --+ WINDOW_WIDTH / 2;
+	love.graphics.setColor( 1,1,1 );
+	local linex = ((PlaybackHandler.songpos - PATTERN_SCROLL) * PATTERN_ZOOMX) + PTRN_SIDE_WIDTH;
+	love.graphics.line(linex,120,linex,DIVIDER_POS - 5);
+	
+	-- set play line
+	love.graphics.setColor( 0,1,1 );
+	local linex = ((PlaybackHandler.setsongpos - PATTERN_SCROLL) * PATTERN_ZOOMX) + PTRN_SIDE_WIDTH;
 	love.graphics.line(linex,120,linex,DIVIDER_POS - 5);
 	
 	-- popup text

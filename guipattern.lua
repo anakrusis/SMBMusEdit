@@ -18,7 +18,7 @@ function updatePatternGUI( song )
 	GROUP_PTRN_EDIT:show();
 end
 
--- -- Element used to contain the ElementPatterns as defined below
+-- Element used to contain the ElementPatterns as defined below
 ElementPatternContainer = {}; ElementPatternContainer.__index = ElementPatternContainer;
 function ElementPatternContainer.new(channel)
 	local self = setmetatable(GuiElement.new(0, 0, 100, 50, GROUP_PTRN_EDIT), ElementPatternContainer);
@@ -32,14 +32,6 @@ function ElementPatternContainer.new(channel)
 end
 setmetatable(ElementPatternContainer, {__index = GuiElement});
 
--- ElementPatternContainer = GuiElement:new{
-	-- channel = nil,
-	-- x=0,y=0,width=100,height=50,
-	-- autopos = "left", autosizey = true, padding = 0,
--- }
-
--- table.remove(elements); 
-
 function ElementPatternContainer:onUpdate()
 	self.width = 2000;
 	if self.channel == "noise" then 
@@ -47,22 +39,9 @@ function ElementPatternContainer:onUpdate()
 	else
 		self:show()
 	end
-	
-	--print("updating " .. self.channel);
 end
 
--- -- -- Element used to display and select a specific pattern when clicked
--- -- ElementPattern = GuiElement:new{
-	-- -- pattern = nil, -- numerical index
-	-- -- song    = nil, -- ditto
-	-- -- channel = nil, -- will be a key like "pulse1" etc.
-	-- -- height = 50,
-	-- -- bg_color = {1,1,1},
-	-- -- enable_color = {0,0,0},
-	-- -- text_color = {0,0,0},
-	-- -- padding = 0,
--- -- }
-
+-- Element used to display and select a specific pattern when clicked
 ElementPattern = {}; ElementPattern.__index = ElementPattern;
 function ElementPattern.new(parent, song, pattern, channel)
 	local self = setmetatable( GuiElement.new(0,0,0,50,parent ), ElementPattern);
@@ -73,31 +52,26 @@ function ElementPattern.new(parent, song, pattern, channel)
 	self.padding = 0;
 	self.name = "p";
 	
-	-- if (self.parent) then
-		-- --print(self.parent.name);
-		-- --print( o.name .. " added to " .. o.parent.name);
-		-- self.parent:appendElement( self );
-	-- else
-		-- --elements.push(this);
-		-- --print( o.name .. " added to elements " );
-		-- table.insert(elements, self);
-	-- end
-	
 	return self;
 end
 setmetatable(ElementPattern, {__index = GuiElement});
 
 function ElementPattern:onClick()
+	local ptrn = songs[self.song].patterns[self.pattern];
 	selectedPattern = self.pattern;
 	selectedChannel = self.channel;
+	
+	-- todo make the position set to the position at which it is clicked
+	PlaybackHandler.setsongpos = ptrn.starttime;
+	PlaybackHandler.setplaypos = 0;
+	PlaybackHandler.setPattern = self.pattern;
+	
 	print(self.dispheight);
 end
 function ElementPattern:onUpdate()
 	local ptrn = songs[self.song].patterns[self.pattern];
 	self.width = ptrn.duration * PATTERN_ZOOMX;
 	self.bg_color = CHANNEL_COLORS[ self.channel ];
-	
-	--print("updating " .. ptrn:getName() .. " " .. self.channel);
 end
 
 function ElementPattern:onRender()
@@ -142,7 +116,7 @@ function ElementPattern:onRender()
 	end
 end
 
--- -- Element on the pattern editor's sidebar which contains the name of the pattern, solo, mute
+-- Element on the pattern editor's sidebar which contains the name of the pattern, solo, mute
 ElementPatternSide = {}; ElementPatternSide.__index = ElementPatternSide;
 function ElementPatternSide.new(channel,text)
 	local self = setmetatable(GuiElement.new(0, 0, 255, 60, GROUP_PTRN_SIDE, text), ElementPatternSide);
@@ -152,7 +126,14 @@ function ElementPatternSide.new(channel,text)
 	self.channel = channel;
 	
 	local solo = GuiElement.new(0,120,40,40,self,"S");
+	function solo:onClick()
+	
+	end
+	
 	local mute = GuiElement.new(0,120,40,40,self,"M");
+	function mute:onClick()
+	
+	end
 	
 	return self;
 end
