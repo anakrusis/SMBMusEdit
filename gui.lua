@@ -7,7 +7,7 @@ function initGUI()
 	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0; PIANOROLL_ZOOMX = 4; PIANOROLL_ZOOMY = 20;
 	PIANOROLL_TOPBAR_HEIGHT = 16;
 	OPTIMIZE_SCROLL   = 0;
-	DIVIDER_POS = 325; SIDE_PIANO_WIDTH = 128; SIDE_PTRN_WIDTH = 250;
+	DIVIDER_POS = 325; SIDE_PIANO_WIDTH = 128; PTRN_SIDE_WIDTH = 250;
 	
 	-- text that shows up for errors and other info bits at the bottom
 	popup_timer = 0; popup_color = {}; popup_text = ""; popup_start = 0;
@@ -27,205 +27,215 @@ function initGUI()
 	CHANNEL_COLORS["tri"]    = { 0,   0, 1 }
 	CHANNEL_COLORS["noise"]  = { 0, 0.5, 0.5 }
 	
-	GROUP_TOPBAR = GuiElement.new(0,0,500,3); GROUP_TOPBAR.autopos = "left"; GROUP_TOPBAR.autosizey = true;
-	function GROUP_TOPBAR:onUpdate()
-		self.width = WINDOW_WIDTH;
-	end
+	-- TOPBAR 2: Furthest back, it contains the pattern and song selection buttons
+	-- Soon it will have different tools as well, like pencil, selection, etc... (see sekaiju, ableton, etc)
 	GROUP_TOPBAR2 = GuiElement.new(0,60,500,3); GROUP_TOPBAR2.autopos = "left"; GROUP_TOPBAR2.autosizey = true;
 	function GROUP_TOPBAR2:onUpdate()
 		self.width = WINDOW_WIDTH;
 	end
-	local prevsong = GuiElement.new(0,0,55,50,GROUP_TOPBAR2); prevsong.text = "<S";
+	local prevsong = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"<S");
 	function prevsong:onClick()
 		selectSong((selectedSong - 1) % SONG_COUNT);	
 	end
-	local currsong = GuiElement.new(0,0,300,50,GROUP_TOPBAR2); currsong.text = "";
+	local currsong = GuiElement.new(0,0,300,50,GROUP_TOPBAR2);
 	function currsong:onUpdate()
 		self.text = songs[selectedSong].name;
 	end
-	local nextsong = GuiElement.new(0,0,55,50,GROUP_TOPBAR2); nextsong.text="S>";
+	local nextsong = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"S>");
 	function nextsong:onClick()
 		selectSong((selectedSong + 1) % SONG_COUNT);
 	end
 	
-	local prevptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2); prevptrn.text="<P";
+	local prevptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"<P");
 	function prevptrn:onClick()
 		local song = songs[selectedSong];
 		selectedPattern = ((selectedPattern - 1) % song.patternCount);	
 	end
-	local nextptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2); nextptrn.text="P>";
+	local nextptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"P>");
 	function nextptrn:onClick()
 		local song = songs[selectedSong];
 		selectedPattern = ((selectedPattern + 1) % song.patternCount);	
-	end 	
+	end 
+
+	-- TOPBAR 1: The main bar with the main functions File, Edit
+	GROUP_TOPBAR = GuiElement.new(0,0,500,3); GROUP_TOPBAR.autopos = "left"; GROUP_TOPBAR.autosizey = true;
+	function GROUP_TOPBAR:onUpdate()
+		self.width = WINDOW_WIDTH;
+	end	
+	local file = GuiElement.new(0,0,100,50,GROUP_TOPBAR,"File");
+	--{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="file", text="File"};
+	function file:onClick()
+		openGUIWindow( GROUP_FILE );
+	end
+	local edit = GuiElement.new(0,0,100,50,GROUP_TOPBAR,"Edit");
+	--{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="edit", text="Edit"};
+	function edit:onClick()
+		openGUIWindow( GROUP_EDIT );
+	end
 	
-	-- local file = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="file", text="File"};
-	-- function file:onClick()
-		-- openGUIWindow( GROUP_FILE );
-	-- end
-	-- local edit = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="edit", text="Edit"};
-	-- function edit:onClick()
-		-- openGUIWindow( GROUP_EDIT );
-	-- end
-	
+	-- PTRN EDIT: The main pattern editor container and its four tracks, these are dynamically filled elsewhere
 	GROUP_PTRN_EDIT = GuiElement.new(-50,120,500,60); GROUP_PTRN_EDIT.autopos = "top";
 	GROUP_PTRN_EDIT.autosizey = true; GROUP_PTRN_EDIT.padding = 0; GROUP_PTRN_EDIT.name = "ptrnedit";
 	function GROUP_PTRN_EDIT:onUpdate()
 		self.width = 2000;
-		self.x = ((0 - PATTERN_SCROLL) * PATTERN_ZOOMX)
+		self.x = ((0 - PATTERN_SCROLL) * PATTERN_ZOOMX) + PTRN_SIDE_WIDTH;
 	end
-	
 	GROUP_PTRN_EDIT.ELM_PULSE2 = ElementPatternContainer.new("pulse2");
 	GROUP_PTRN_EDIT.ELM_PULSE1 = ElementPatternContainer.new("pulse1");
 	GROUP_PTRN_EDIT.ELM_TRI    = ElementPatternContainer.new("tri");
 	GROUP_PTRN_EDIT.ELM_NOISE  = ElementPatternContainer.new("noise");
 	
-	--ElementPatternContainer:new{channel="pulse2", name="pulse2cntr", parent=GROUP_PTRN_EDIT,};
-	-- GROUP_PTRN_EDIT.ELM_PULSE1 = ElementPatternContainer:new{channel="pulse1", name="pulse1cntr", parent=GROUP_PTRN_EDIT,};
-	-- GROUP_PTRN_EDIT.ELM_TRI    = ElementPatternContainer:new{channel="tri",    name="tricntr", parent=GROUP_PTRN_EDIT,};
-	-- GROUP_PTRN_EDIT.ELM_NOISE  = ElementPatternContainer:new{channel="noise",  name="noisecntr", parent=GROUP_PTRN_EDIT,};
-	
-	-- -- GROUP_PTRN_SIDE = GuiElement:new{x=0,y=120,width=100,height=100, name="", autosizex = true, padding=0}
-	-- -- GROUP_PTRN_SIDE.ELM_PULSE2 = GuiElement:new{x=0,y=0,width=250,height=50,parent=GROUP_PTRN_SIDE, name="pulse2cntr",padding = 5,text="Pulse 2"};
+	-- PTRN SIDE: The sidebar displaying the names of the channels
+	-- in the future it will have [Mute][Solo}
+	GROUP_PTRN_SIDE = GuiElement.new(0,120,100,100); GROUP_PTRN_SIDE.autosize = true; GROUP_PTRN_SIDE.padding = 0;
+	GROUP_PTRN_SIDE.ELM_PULSE2 = ElementPatternSide.new("pulse2","Pulse 2");
+	GROUP_PTRN_SIDE.ELM_PULSE1 = ElementPatternSide.new("pulse1","Pulse 1");
+	GROUP_PTRN_SIDE.ELM_TRI    = ElementPatternSide.new("tri","Tri");
+	GROUP_PTRN_SIDE.ELM_NOISE  = ElementPatternSide.new("noise","Noise");
+	function GROUP_PTRN_SIDE.ELM_PULSE2:onClick()
+		print(self.dispheight);
+	end
 	
 	GROUP_FILE = GuiElement.new(0,55,500,3); GROUP_FILE.autopos = "left"; GROUP_FILE.autosize = true;
 	--{x=0, y=55, width=500, height=3, name="file_container", autopos = "left", autosize = true};
 	GROUP_FILE:hide();
-	-- local export = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_FILE, name="export", text="Export ROM"};
-	-- function export:onClick()
-		-- rom:export(rom.path);
-		-- GROUP_FILE:hide(); openGUIWindow( GROUP_EXPORT_SUCCESS );
-	-- end
-	-- function export:getEnabledCondition()
-		-- return rom.path ~= nil
-	-- end
+	local export = GuiElement.new(0,0,200,50,GROUP_FILE,"Export ROM");
+	--{x=0,y=0,width=200,height=50,parent=GROUP_FILE, name="export", text="Export ROM"};
+	function export:onClick()
+		rom:export(rom.path);
+		GROUP_FILE:hide(); openGUIWindow( GROUP_EXPORT_SUCCESS );
+	end
+	function export:getEnabledCondition()
+		return rom.path ~= nil
+	end
 	
 	GROUP_EDIT = GuiElement.new(97,55,500,3); GROUP_EDIT.autopos = "top"; GROUP_EDIT.autosize = true;
 	--{x=97, y=55, width=500, height=3, name="edit_container", autopos = "top", autosize = true}; 
 	GROUP_EDIT:hide();
-	-- local optimize = GuiElement:new{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="optimize", text="Optimize..."};
-	-- function optimize:onClick()
-		-- openGUIWindow( GROUP_OPTIMIZE );
-	-- end
-	-- function optimize:getEnabledCondition()
-		-- return rom.path ~= nil
-	-- end
-	-- local ptredit = GuiElement:new{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="ptredit", text="Pointer Edit..."};
-	-- function ptredit:onClick()
-		-- if (rom.path) then
-			-- openGUIWindow( GROUP_PNTR_EDIT );
-		-- end
-	-- end
-	-- function ptredit:onUpdate()
-		-- if (rom.path) then
-			-- self.text_color = {1,1,1};
-		-- else
-			-- self.text_color = {0.5,0.5,0.5};
-		-- end
-	-- end
+	local optimize = GuiElement.new(0,0,275,50,GROUP_EDIT,"Optimize...");
+	--{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="optimize", text="Optimize..."};
+	function optimize:onClick()
+		openGUIWindow( GROUP_OPTIMIZE );
+	end
+	function optimize:getEnabledCondition()
+		return rom.path ~= nil
+	end
+	local ptredit = GuiElement.new(0,0,275,50,GROUP_EDIT,"Pointer Edit...");
+	--{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="ptredit", text="Pointer Edit..."};
+	function ptredit:onClick()
+		openGUIWindow( GROUP_PNTR_EDIT );
+	end
+	function ptredit:getEnabledCondition()
+		return rom.path ~= nil
+	end
 	
 	GROUP_OPTIMIZE = GuiElement.new(55,55,600,3); GROUP_OPTIMIZE.autosize = true; 
 	GROUP_OPTIMIZE.autocenterX = true; GROUP_OPTIMIZE.autocenterY = true;
-	--{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_OPTIMIZE:hide();
-	-- local optimize = GuiElement:new{x=0,y=0,width=800,height=600,parent=GROUP_OPTIMIZE, text=""};
-	-- function optimize:onUpdate()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
+	--{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; 
+	GROUP_OPTIMIZE:hide();
+	local optimize = GuiElement.new(0,0,800,600,GROUP_OPTIMIZE);
+	--{x=0,y=0,width=800,height=600,parent=GROUP_OPTIMIZE, text=""};
+	function optimize:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
 		
-		-- local cbinfo = "";
-		-- local rw = 24; local rh = 16; local rxs = 400;
-		-- local x = math.floor((love.mouse.getX() - rxs - self.dispx) / rw); 
-		-- local y = math.floor((love.mouse.getY() + OPTIMIZE_SCROLL - self.dispy) / rh)
-		-- local ind = 0x79c0 + ( 16 * y ) + x;
-		-- local cb = rom.data[ind];
+		local cbinfo = "";
+		local rw = 24; local rh = 16; local rxs = 400;
+		local x = math.floor((love.mouse.getX() - rxs - self.dispx) / rw); 
+		local y = math.floor((love.mouse.getY() + OPTIMIZE_SCROLL - self.dispy) / rh)
+		local ind = 0x79c0 + ( 16 * y ) + x;
+		local cb = rom.data[ind];
 		
-		-- if x >= 0 and x < 16 then
-			-- cbinfo = cbinfo .. "Byte Addr.: $" .. string.format("%04X", ind)
-			-- cbinfo = cbinfo .. "\nValue: " .. string.format("%02X", cb.val);
+		if x >= 0 and x < 16 then
+			cbinfo = cbinfo .. "Byte Addr.: $" .. string.format("%04X", ind)
+			cbinfo = cbinfo .. "\nValue: " .. string.format("%02X", cb.val);
 			
-			-- for i = 1, #cb.song_claims do
-				-- local song = songs[ cb.song_claims[i] ];
-				-- local ptrn = song.patterns[ cb.ptrn_claims[i] ];
-				-- local chnl = cb.chnl_claims[i];
-				-- cbinfo = cbinfo .. "\n" .. ptrn:getName() .. " " .. chnl;
-			-- end
-			-- cbinfo = cbinfo .. "\n\n";
-		-- end
+			for i = 1, #cb.song_claims do
+				local song = songs[ cb.song_claims[i] ];
+				local ptrn = song.patterns[ cb.ptrn_claims[i] ];
+				local chnl = cb.chnl_claims[i];
+				cbinfo = cbinfo .. "\n" .. ptrn:getName() .. " " .. chnl;
+			end
+			cbinfo = cbinfo .. "\n\n";
+		end
 		
-		-- self.text = {
-			-- {1,1,1}, 
-			-- "Current Pattern:\n" ..  song.name .. " #" .. ptrn.patternindex .. "\n\n",
-			-- CHANNEL_COLORS["pulse2"],
-			-- "Pulse 2: $" ..  string.format("%02X", ptrn.pulse2_start_index ) .. "\n",
-			-- CHANNEL_COLORS["pulse1"],
-			-- "Pulse 1: $" ..  string.format("%02X", ptrn.pulse1_start_index ) .. "\n",
-			-- CHANNEL_COLORS["tri"],
-			-- "Tri:     $" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n",
-			-- {1,1,1},
-			-- "\n" .. cbinfo,
-			-- {1,1,1},
-			-- "Scroll to view more\nof the byte viewer --->\n\nThe 'Allocate Unused\nBytes' button will\nallocate space to the\npattern and channel\ncurrently opened in the\npiano roll.",
-		-- }
-		-- if (ptrn.hasNoise) then
-			-- table.insert(self.text, 9, CHANNEL_COLORS["noise"]);
-			-- table.insert(self.text, 10, "Noise:   $" ..  string.format("%02X", ptrn.noise_start_index ) .. "\n");
-		-- end
-	-- end
-	-- function optimize:onRender()	
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
+		self.text = {
+			{1,1,1}, 
+			"Current Pattern:\n" ..  song.name .. " #" .. ptrn.patternindex .. "\n\n",
+			CHANNEL_COLORS["pulse2"],
+			"Pulse 2: $" ..  string.format("%02X", ptrn.pulse2_start_index ) .. "\n",
+			CHANNEL_COLORS["pulse1"],
+			"Pulse 1: $" ..  string.format("%02X", ptrn.pulse1_start_index ) .. "\n",
+			CHANNEL_COLORS["tri"],
+			"Tri:     $" ..  string.format("%02X", ptrn.tri_start_index ) .. "\n",
+			{1,1,1},
+			"\n" .. cbinfo,
+			{1,1,1},
+			"Scroll to view more\nof the byte viewer --->\n\nThe 'Allocate Unused\nBytes' button will\nallocate space to the\npattern and channel\ncurrently opened in the\npiano roll.",
+		}
+		if (ptrn.hasNoise) then
+			table.insert(self.text, 9, CHANNEL_COLORS["noise"]);
+			table.insert(self.text, 10, "Noise:   $" ..  string.format("%02X", ptrn.noise_start_index ) .. "\n");
+		end
+	end
+	function optimize:onRender()	
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
 		
-		-- local DATA_START = 0x79C8;
-		-- local DATA_END   = 0x7F0F;
+		local DATA_START = 0x79C8;
+		local DATA_END   = 0x7F0F;
 		
-		-- for i = DATA_START, DATA_END do
-			-- -- rectangle width, height, and x start
-			-- local rw = 24; local rh = 16; local rxs = 400;
+		for i = DATA_START, DATA_END do
+			-- rectangle width, height, and x start
+			local rw = 24; local rh = 16; local rxs = 400;
 			
-			-- local rectx = self.dispx + rxs + ( i % 16 ) * rw
-			-- local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * rh) - OPTIMIZE_SCROLL; 
-			-- local b = rom.data[i] -- byte
-			-- if (b:hasChannelClaim("pulse2")) then
-				-- love.graphics.setColor(CHANNEL_COLORS["pulse2"]);
+			local rectx = self.dispx + rxs + ( i % 16 ) * rw
+			local recty = self.dispy + (math.floor( (i - 0x79c0) / 16 ) * rh) - OPTIMIZE_SCROLL; 
+			local b = rom.data[i] -- byte
+			if (b:hasChannelClaim("pulse2")) then
+				love.graphics.setColor(CHANNEL_COLORS["pulse2"]);
 			
-			-- elseif (b:hasChannelClaim("tri")) then
-				-- love.graphics.setColor(CHANNEL_COLORS["tri"]);
+			elseif (b:hasChannelClaim("tri")) then
+				love.graphics.setColor(CHANNEL_COLORS["tri"]);
 			
-			-- elseif (b:hasChannelClaim("pulse1")) then
-				-- love.graphics.setColor(CHANNEL_COLORS["pulse1"]);
+			elseif (b:hasChannelClaim("pulse1")) then
+				love.graphics.setColor(CHANNEL_COLORS["pulse1"]);
 			
-			-- elseif (b:hasChannelClaim("noise")) then
-				-- love.graphics.setColor(CHANNEL_COLORS["noise"]);
+			elseif (b:hasChannelClaim("noise")) then
+				love.graphics.setColor(CHANNEL_COLORS["noise"]);
 			
-			-- -- used byte
-			-- elseif (#b.song_claims > 0) then
-				-- love.graphics.setColor(1,0,0);
+			-- used byte
+			elseif (#b.song_claims > 0) then
+				love.graphics.setColor(1,0,0);
 				
-			-- -- unused byte
-			-- else
-				-- love.graphics.setColor(0,1,0);
-			-- end
-			-- if (recty >= self.dispy and recty <= self.dispy + self.dispheight) then
-				-- love.graphics.rectangle("fill",rectx,recty,rw * 0.75,rh * 0.75);
+			-- unused byte
+			else
+				love.graphics.setColor(0,1,0);
+			end
+			if (recty >= self.dispy and recty <= self.dispy + self.dispheight) then
+				love.graphics.rectangle("fill",rectx,recty,rw * 0.75,rh * 0.75);
 				
-				-- if (b:hasSongPatternClaim(selectedSong,selectedPattern)) then
-					-- love.graphics.setColor(1,1,0);
-					-- love.graphics.rectangle("line",rectx,recty,rw * 0.75,rh * 0.75);
-				-- end
-			-- end
-		-- end			
-	-- end
-	-- GROUP_OPTIMIZE.BTN_ALLOCATE = GuiElement:new{x=0,y=0,width=375,height=50,parent=GROUP_OPTIMIZE, text="Allocate Unused Byte"};
-	-- function GROUP_OPTIMIZE.BTN_ALLOCATE:onClick()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- ptrn:allocateUnusedBytes( selectedChannel );
-	-- end
+				-- bytes belonging to the selected song
+				if (b:hasSongPatternClaim(selectedSong,selectedPattern)) then
+					love.graphics.setColor(1,1,0);
+					love.graphics.rectangle("line",rectx,recty,rw * 0.75,rh * 0.75);
+				end
+			end
+		end			
+	end
+	GROUP_OPTIMIZE.BTN_ALLOCATE = GuiElement.new(0,0,375,50,GROUP_OPTIMIZE, "Allocate Unused Byte");
+	--{x=0,y=0,width=375,height=50,parent=GROUP_OPTIMIZE, text="Allocate Unused Byte"};
+	function GROUP_OPTIMIZE.BTN_ALLOCATE:onClick()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		ptrn:allocateUnusedBytes( selectedChannel );
+	end
 	
-	-- GROUP_OPTIMIZE.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_OPTIMIZE, text="Back"};
-	-- function GROUP_OPTIMIZE.BTN_BACK:onClick()
-		-- GROUP_EDIT:hide(); GROUP_OPTIMIZE:hide(); openGUIWindow( GROUP_TOPBAR );
-	-- end
+	GROUP_OPTIMIZE.BTN_BACK = GuiElement.new(0,0,100,50,GROUP_OPTIMIZE,"Back");
+	--{x=0,y=0,width=100,height=50,parent=GROUP_OPTIMIZE, text="Back"};
+	function GROUP_OPTIMIZE.BTN_BACK:onClick()
+		GROUP_EDIT:hide(); GROUP_OPTIMIZE:hide(); openGUIWindow( GROUP_TOPBAR );
+	end
 	
 	-- GROUP_PNTR_EDIT = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_PNTR_EDIT:hide();
 	-- local pointeredit = GuiElement:new{x=0,y=0,width=620,height=400,parent=GROUP_PNTR_EDIT, text=""};
@@ -411,7 +421,7 @@ function openGUIWindow( element )
 			GROUP_PTRN_EDIT.active = true;  GROUP_PTRN_EDIT:show();
 		end
 		GROUP_TOPBAR2.active = true;  GROUP_TOPBAR2:show();
-		--GROUP_PTRN_SIDE.active = true; GROUP_PTRN_SIDE:show();
+		GROUP_PTRN_SIDE.active = true; GROUP_PTRN_SIDE:show();
 	end
 	
 	element.active = true;

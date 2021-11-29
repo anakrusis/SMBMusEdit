@@ -1,5 +1,5 @@
 GuiElement = {}; GuiElement.__index = GuiElement;
-function GuiElement.new(x,y,width,height,parent)
+function GuiElement.new(x,y,width,height,parent,text)
 	local self = setmetatable({}, GuiElement);
 	self.x = x;
 	self.y = y;
@@ -36,6 +36,7 @@ function GuiElement.new(x,y,width,height,parent)
 	
 	self.name = "";
 	self.text = "";
+	if (text) then self.text = text; end
 	self.disptext = "";
 	
 	-- referential properties
@@ -171,6 +172,22 @@ function GuiElement:update()
 					end
 				end
 			end
+			if p.autopos == "right" then
+				
+				self.dispx = p.dispx + (p.dispwidth - p.padding - self.dispwidth);
+				self.dispy = p.dispy + p.padding;
+				
+				for i = 1, #p.children do
+					
+					if (p.children[i].visible) then
+						if p.children[i] == self then
+							break;
+						else
+							self.dispx = self.dispx - (p.children[i].dispwidth + p.padding);
+						end
+					end
+				end
+			end 
 		else
 			
 			if (self.autocenterX) then

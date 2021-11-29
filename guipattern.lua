@@ -1,3 +1,23 @@
+function updatePatternGUI( song )
+	GROUP_PTRN_EDIT.ELM_PULSE2.children = {}
+	GROUP_PTRN_EDIT.ELM_TRI.children    = {}
+	GROUP_PTRN_EDIT.ELM_PULSE1.children = {}
+	GROUP_PTRN_EDIT.ELM_NOISE.children  = {}
+	
+	for i = 0, song.patternCount - 1 do
+		local p = song.patterns[i];
+		
+		local p2 = ElementPattern.new(GROUP_PTRN_EDIT.ELM_PULSE2, song.songindex, i, "pulse2" );
+		local p1 = ElementPattern.new(GROUP_PTRN_EDIT.ELM_PULSE1, song.songindex, i, "pulse1" );
+		local tr = ElementPattern.new(GROUP_PTRN_EDIT.ELM_TRI,    song.songindex, i, "tri" );
+		if song.hasNoise then
+			local no = ElementPattern.new(GROUP_PTRN_EDIT.ELM_NOISE, song.songindex, i, "noise" );
+		end
+	end
+	
+	GROUP_PTRN_EDIT:show();
+end
+
 -- -- Element used to contain the ElementPatterns as defined below
 ElementPatternContainer = {}; ElementPatternContainer.__index = ElementPatternContainer;
 function ElementPatternContainer.new(channel)
@@ -48,13 +68,10 @@ function ElementPattern.new(parent, song, pattern, channel)
 	local self = setmetatable( GuiElement.new(0,0,0,50,parent ), ElementPattern);
 
 	self.pattern = pattern; self.song = song; self.channel = channel;
-	--self.height = 50;
 	self.bg_color = {1,1,1};
 	self.enable_color = {0,0,0};
 	self.padding = 0;
 	self.name = "p";
-	
-	print(self.text_color[1]);
 	
 	-- if (self.parent) then
 		-- --print(self.parent.name);
@@ -73,7 +90,7 @@ setmetatable(ElementPattern, {__index = GuiElement});
 function ElementPattern:onClick()
 	selectedPattern = self.pattern;
 	selectedChannel = self.channel;
-	print(self.name .. " clicked");
+	print(self.dispheight);
 end
 function ElementPattern:onUpdate()
 	local ptrn = songs[self.song].patterns[self.pattern];
@@ -125,27 +142,18 @@ function ElementPattern:onRender()
 	end
 end
 
-function updatePatternGUI( song )
-	GROUP_PTRN_EDIT.ELM_PULSE2.children = {}
-	GROUP_PTRN_EDIT.ELM_TRI.children    = {}
-	GROUP_PTRN_EDIT.ELM_PULSE1.children = {}
-	GROUP_PTRN_EDIT.ELM_NOISE.children  = {}
+-- -- Element on the pattern editor's sidebar which contains the name of the pattern, solo, mute
+ElementPatternSide = {}; ElementPatternSide.__index = ElementPatternSide;
+function ElementPatternSide.new(channel,text)
+	local self = setmetatable(GuiElement.new(0, 0, 255, 60, GROUP_PTRN_SIDE, text), ElementPatternSide);
+
+	self.autopos = "right";
+	self.children = {};
+	self.channel = channel;
 	
-	for i = 0, song.patternCount - 1 do
-		local p = song.patterns[i];
-		
-		local p2 = ElementPattern.new(GROUP_PTRN_EDIT.ELM_PULSE2, song.songindex, i, "pulse2" );
-		local p1 = ElementPattern.new(GROUP_PTRN_EDIT.ELM_PULSE1, song.songindex, i, "pulse1" );
-		local tr = ElementPattern.new(GROUP_PTRN_EDIT.ELM_TRI,    song.songindex, i, "tri" );
-		
-		--local p2 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE2, song = song.songindex, pattern = i, channel = "pulse2"};
-		--local p1 = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_PULSE1, song = song.songindex, pattern = i, channel = "pulse1"};
-		--local tr = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_TRI,    song = song.songindex, pattern = i, channel = "tri"};
-		if song.hasNoise then
-			local no = ElementPattern.new(GROUP_PTRN_EDIT.ELM_NOISE, song.songindex, i, "noise" );
-			--local no = ElementPattern:new{parent=GROUP_PTRN_EDIT.ELM_NOISE,  song = song.songindex, pattern = i, channel = "noise"};
-		end
-	end
+	local solo = GuiElement.new(0,120,40,40,self,"S");
+	local mute = GuiElement.new(0,120,40,40,self,"M");
 	
-	GROUP_PTRN_EDIT:show();
+	return self;
 end
+setmetatable(ElementPatternSide, {__index = GuiElement});
