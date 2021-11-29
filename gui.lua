@@ -31,38 +31,33 @@ function initGUI()
 	function GROUP_TOPBAR:onUpdate()
 		self.width = WINDOW_WIDTH;
 	end
+	GROUP_TOPBAR2 = GuiElement.new(0,60,500,3); GROUP_TOPBAR2.autopos = "left"; GROUP_TOPBAR2.autosizey = true;
+	function GROUP_TOPBAR2:onUpdate()
+		self.width = WINDOW_WIDTH;
+	end
+	local prevsong = GuiElement.new(0,0,55,50,GROUP_TOPBAR2); prevsong.text = "<S";
+	function prevsong:onClick()
+		selectSong((selectedSong - 1) % SONG_COUNT);	
+	end
+	local currsong = GuiElement.new(0,0,300,50,GROUP_TOPBAR2); currsong.text = "";
+	function currsong:onUpdate()
+		self.text = songs[selectedSong].name;
+	end
+	local nextsong = GuiElement.new(0,0,55,50,GROUP_TOPBAR2); nextsong.text="S>";
+	function nextsong:onClick()
+		selectSong((selectedSong + 1) % SONG_COUNT);
+	end
 	
-	-- GROUP_TOPBAR = GuiElement:new{x=0, y=0, width=500, height=3, name="topbar", autopos = "left", autosizey = true};
-	-- function GROUP_TOPBAR:onUpdate()
-		-- self.width = WINDOW_WIDTH;
-	-- end
-	-- GROUP_TOPBAR2 = GuiElement:new{x=0, y=60, width=500, height=3, name="topbar2", autopos = "left", autosizey = true};
-	-- function GROUP_TOPBAR2:onUpdate()
-		-- self.width = WINDOW_WIDTH;
-	-- end
-	-- local prevsong = GuiElement:new{x=0,y=0,width=55,height=50,parent=GROUP_TOPBAR2, name="prevsong", text="<S"};
-	-- function prevsong:onClick()
-		-- selectSong((selectedSong - 1) % SONG_COUNT);	
-	-- end
-	-- local currsong = GuiElement:new{x=0,y=0,width=300,height=50,parent=GROUP_TOPBAR2, name="currsong", text="<"};
-	-- function currsong:onUpdate()
-		-- self.text = songs[selectedSong].name;
-	-- end
-	-- local nextsong = GuiElement:new{x=0,y=0,width=55,height=50,parent=GROUP_TOPBAR2, name="nextsong", text="S>"};
-	-- function nextsong:onClick()
-		-- selectSong((selectedSong + 1) % SONG_COUNT);
-	-- end
-	
-	-- local prevptrn = GuiElement:new{x=0,y=0,width=55,height=50,parent=GROUP_TOPBAR2, name="prevptrn", text="<P"};
-	-- function prevptrn:onClick()
-		-- local song = songs[selectedSong];
-		-- selectedPattern = ((selectedPattern - 1) % song.patternCount);	
-	-- end
-	-- local nextptrn = GuiElement:new{x=0,y=0,width=55,height=50,parent=GROUP_TOPBAR2, name="nextptrn", text="P>"};
-	-- function nextptrn:onClick()
-		-- local song = songs[selectedSong];
-		-- selectedPattern = ((selectedPattern + 1) % song.patternCount);	
-	-- end 	
+	local prevptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2); prevptrn.text="<P";
+	function prevptrn:onClick()
+		local song = songs[selectedSong];
+		selectedPattern = ((selectedPattern - 1) % song.patternCount);	
+	end
+	local nextptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2); nextptrn.text="P>";
+	function nextptrn:onClick()
+		local song = songs[selectedSong];
+		selectedPattern = ((selectedPattern + 1) % song.patternCount);	
+	end 	
 	
 	-- local file = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="file", text="File"};
 	-- function file:onClick()
@@ -73,13 +68,19 @@ function initGUI()
 		-- openGUIWindow( GROUP_EDIT );
 	-- end
 	
-	-- GROUP_PTRN_EDIT = GuiElement:new{x=-50, y=120, width=500, height=60, name="ptrneditor", autopos = "top", autosizey = true, padding = 0};
-	-- function GROUP_PTRN_EDIT:onUpdate()
-		-- self.width = 2000;
-		-- self.x = ((0 - PATTERN_SCROLL) * PATTERN_ZOOMX)
-	-- end
+	GROUP_PTRN_EDIT = GuiElement.new(-50,120,500,60); GROUP_PTRN_EDIT.autopos = "top";
+	GROUP_PTRN_EDIT.autosizey = true; GROUP_PTRN_EDIT.padding = 0; GROUP_PTRN_EDIT.name = "ptrnedit";
+	function GROUP_PTRN_EDIT:onUpdate()
+		self.width = 2000;
+		self.x = ((0 - PATTERN_SCROLL) * PATTERN_ZOOMX)
+	end
 	
-	-- GROUP_PTRN_EDIT.ELM_PULSE2 = ElementPatternContainer:new{channel="pulse2", name="pulse2cntr", parent=GROUP_PTRN_EDIT,};
+	GROUP_PTRN_EDIT.ELM_PULSE2 = ElementPatternContainer.new("pulse2");
+	GROUP_PTRN_EDIT.ELM_PULSE1 = ElementPatternContainer.new("pulse1");
+	GROUP_PTRN_EDIT.ELM_TRI    = ElementPatternContainer.new("tri");
+	GROUP_PTRN_EDIT.ELM_NOISE  = ElementPatternContainer.new("noise");
+	
+	--ElementPatternContainer:new{channel="pulse2", name="pulse2cntr", parent=GROUP_PTRN_EDIT,};
 	-- GROUP_PTRN_EDIT.ELM_PULSE1 = ElementPatternContainer:new{channel="pulse1", name="pulse1cntr", parent=GROUP_PTRN_EDIT,};
 	-- GROUP_PTRN_EDIT.ELM_TRI    = ElementPatternContainer:new{channel="tri",    name="tricntr", parent=GROUP_PTRN_EDIT,};
 	-- GROUP_PTRN_EDIT.ELM_NOISE  = ElementPatternContainer:new{channel="noise",  name="noisecntr", parent=GROUP_PTRN_EDIT,};
@@ -87,8 +88,9 @@ function initGUI()
 	-- -- GROUP_PTRN_SIDE = GuiElement:new{x=0,y=120,width=100,height=100, name="", autosizex = true, padding=0}
 	-- -- GROUP_PTRN_SIDE.ELM_PULSE2 = GuiElement:new{x=0,y=0,width=250,height=50,parent=GROUP_PTRN_SIDE, name="pulse2cntr",padding = 5,text="Pulse 2"};
 	
-	-- GROUP_FILE = GuiElement:new{x=0, y=55, width=500, height=3, name="file_container", autopos = "left", autosize = true};
-	-- GROUP_FILE:hide();
+	GROUP_FILE = GuiElement.new(0,55,500,3); GROUP_FILE.autopos = "left"; GROUP_FILE.autosize = true;
+	--{x=0, y=55, width=500, height=3, name="file_container", autopos = "left", autosize = true};
+	GROUP_FILE:hide();
 	-- local export = GuiElement:new{x=0,y=0,width=200,height=50,parent=GROUP_FILE, name="export", text="Export ROM"};
 	-- function export:onClick()
 		-- rom:export(rom.path);
@@ -98,7 +100,9 @@ function initGUI()
 		-- return rom.path ~= nil
 	-- end
 	
-	-- GROUP_EDIT = GuiElement:new{x=97, y=55, width=500, height=3, name="edit_container", autopos = "top", autosize = true}; GROUP_EDIT:hide();
+	GROUP_EDIT = GuiElement.new(97,55,500,3); GROUP_EDIT.autopos = "top"; GROUP_EDIT.autosize = true;
+	--{x=97, y=55, width=500, height=3, name="edit_container", autopos = "top", autosize = true}; 
+	GROUP_EDIT:hide();
 	-- local optimize = GuiElement:new{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="optimize", text="Optimize..."};
 	-- function optimize:onClick()
 		-- openGUIWindow( GROUP_OPTIMIZE );
@@ -120,7 +124,9 @@ function initGUI()
 		-- end
 	-- end
 	
-	-- GROUP_OPTIMIZE = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_OPTIMIZE:hide();
+	GROUP_OPTIMIZE = GuiElement.new(55,55,600,3); GROUP_OPTIMIZE.autosize = true; 
+	GROUP_OPTIMIZE.autocenterX = true; GROUP_OPTIMIZE.autocenterY = true;
+	--{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_OPTIMIZE:hide();
 	-- local optimize = GuiElement:new{x=0,y=0,width=800,height=600,parent=GROUP_OPTIMIZE, text=""};
 	-- function optimize:onUpdate()
 		-- local song = songs[selectedSong];
@@ -383,8 +389,8 @@ function initGUI()
 		-- GROUP_EXPORT_SUCCESS:hide(); openGUIWindow( GROUP_TOPBAR );
 	-- end
 	
-	-- openGUIWindow(GROUP_TOPBAR);
-	-- GROUP_PTRN_EDIT:hide();
+	openGUIWindow(GROUP_TOPBAR);
+	GROUP_PTRN_EDIT:hide();
 end
 
 function openGUIWindow( element )
