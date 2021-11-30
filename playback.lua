@@ -12,6 +12,12 @@ PlaybackHandler = {
 		tri    = false,
 		noise  = false
 	},
+	volumes = {
+		pulse2 = 0.6,
+		pulse1 = 0.6,
+		tri    = 1,
+		noise  = 1
+	},
 	
 	playing = false,
 	-- these are in ticks: ticks relative to the start of the current pattern
@@ -31,9 +37,9 @@ PlaybackHandler = {
 }
 
 function PlaybackHandler:initSources()
-	local p2 = love.audio.newSource( "assets/square.wav", "static" ); p2:setLooping(true); p2:setVolume(0.6);
+	local p2 = love.audio.newSource( "assets/square.wav", "static" ); p2:setLooping(true);
 	self.sources["pulse2"] = p2;
-	local p1 = love.audio.newSource( "assets/square.wav", "static" ); p1:setLooping(true); p1:setVolume(0.6);
+	local p1 = love.audio.newSource( "assets/square.wav", "static" ); p1:setLooping(true);
 	self.sources["pulse1"] = p1;
 	local tri = love.audio.newSource( "assets/tri.wav", "static" ); tri:setLooping(true);
 	self.sources["tri"] = tri;
@@ -53,6 +59,20 @@ function PlaybackHandler:togglePlaying()
 	self.playpos = self.setplaypos; self.songpos = self.setsongpos;
 	self.playingPattern = self.setPattern;
 	if (not self.playing) then self:stop(); end
+end
+
+function PlaybackHandler:toggleMute(channel)
+	self.muted[channel] = not self.muted[channel];
+	if self.muted[channel] then 
+		-- without a specific note we dont know what source noise is
+		if channel == "noise" then
+			self.sources["kick"]:stop();
+			self.sources[ "ch" ]:stop();
+			self.sources[ "oh" ]:stop();
+		else
+			self.sources[channel]:stop();
+		end
+	end
 end
 
 -- returns an audio source given a channel and noteval (the noteval is used to decide the sources for noise)
@@ -75,6 +95,8 @@ end
 
 -- called every tick, updates the playback of the song if it is currently ongoing
 function PlaybackHandler:update()
+	if self.preview_playing then self:updatePreview() end
+
 	if not self.playing then return end
 	local ptrn = songs[selectedSong].patterns[self.playingPattern];
 	if not ptrn then return end
@@ -84,19 +106,23 @@ function PlaybackHandler:update()
 	self:updateChannel("tri");
 	self:updateChannel("noise");
 	
-	if (self.playpos >= ptrn.duration) then 
+	if (self.playpos >= ptrn.duration - 1) then 
 		if songs[selectedSong].loop then
-		-- TODO make this skip over all patterns of zero duration
-			self.playingPattern = ( self.playingPattern + 1 ) % ( songs[selectedSong].patternCount );
-			self.playpos = -1;
-			self.songpos = self.songpos - 1;
-			
-			-- loop back to the beginning of song
-			if self.playingPattern == 0 then
-				self.songpos = -1;
+			-- This will step through every subsequent pattern until it finds one with greater than zero duration
+			-- If it reaches the end of the song, it will loop back to the beginning (hence the modulo)
+			local next_nonzero_ptrn;
+			for i = 0, 0xff do
+				self.playingPattern = ( self.playingPattern + 1 ) % ( songs[selectedSong].patternCount );
+				next_nonzero_ptrn = songs[selectedSong].patterns[self.playingPattern];
+				if next_nonzero_ptrn.duration > 0 then
+					break;
+				end
 			end
+			-- Minus one because it will be stepped back up to zero at the end of this function
+			self.playpos = -1;
+			self.songpos = next_nonzero_ptrn.starttime - 1;
 		else
-			stop();
+			self:stop();
 		end
 	end
 	
@@ -105,45 +131,36 @@ function PlaybackHandler:update()
 end
 
 -- initialises the preview
-function previewNote(val)
+function PlaybackHandler:playPreview(val)
 	-- TODO make sources accessible from table of keys
-	local source;
-	if selectedChannel == "pulse2" then
-		source = SRC_PULSE2;
-	elseif selectedChannel == "pulse1" then
-		source = SRC_PULSE1;
-	elseif selectedChannel == "tri" then
-		source = SRC_TRI;
-	end
+	local source = self:getSource(selectedChannel, val)
 	if not source then return end
-	local freq = FREQ_TABLE[ val ];
-	if not freq then source:stop(); return end
 	
-	if (source == SRC_TRI) then
-		freq = freq / 2;
+	if selectedChannel ~= "noise" then
+		local freq = FREQ_TABLE[ val ];
+		if not freq then source:stop(); return end
+		if (selectedChannel == "tri") then
+			freq = freq / 2;
+		end
+		source:setPitch( freq / 130.8128 ); -- <- the frequency of the square wave sample im using right now
 	end
-	source:setPitch( freq / 130.8128 ); -- <- the frequency of the square wave sample im using right now
 	source:play();
-	preview_playing = true; previewtick = 20;
+	self.preview_playing = true; self.previewtick = 20;
+	self.previewpitch = val;
 end
 
-function playPreview()
-	if previewtick <= 1 then
-		local source;
-		if selectedChannel == "pulse2" then
-			source = SRC_PULSE2;
-		elseif selectedChannel == "pulse1" then
-			source = SRC_PULSE1;
-		elseif selectedChannel == "tri" then
-			source = SRC_TRI;
-		end
+function PlaybackHandler:updatePreview()
+	if self.previewtick <= 1 then
+		local source = self:getSource(selectedChannel, self.previewpitch)
 		if not source then return end
-		source:stop(); preview_playing = false;
+		source:stop(); self.preview_playing = false;
 	end
-	previewtick = previewtick - 1;
+	self.previewtick = self.previewtick - 1;
 end
 
 function PlaybackHandler:updateChannel( chnl )
+	if self.muted[chnl] then return end
+
 	local ptrn = songs[selectedSong].patterns[self.playingPattern];
 	if not ptrn then return end
 	local notes = ptrn:getNotes(chnl);
@@ -162,10 +179,12 @@ function PlaybackHandler:updateChannel( chnl )
 			
 			-- rest
 			if ( note.val == 04) then
-				source:stop(); 
+				source:stop();
+				--source:setVolume(0); -- <- this doesnt really have a smooth cutoff, it ramps down weirdly
 				return;
 			-- note
 			else
+				source:setVolume( self.volumes[ chnl ] );
 				-- Noise can't be repitched like the other channels
 				if chnl ~= "noise" then
 					local freq = FREQ_TABLE[ note.val ];
@@ -189,4 +208,12 @@ function PlaybackHandler:stop()
 		self.sources[key]:stop();
 	end
 	self.playing = false;
+end
+
+function PlaybackHandler:reset()
+	self.playpos = 0; self.songpos = 0;
+	self.setsongpos = 0;
+	self.setplaypos = 0;
+	self.setPattern = 0;
+	self.playingPattern = 0;
 end

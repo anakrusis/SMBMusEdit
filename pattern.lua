@@ -147,7 +147,7 @@ function Pattern:appendNote(midinote, tick, channel)
 		return;
 	end
 	
-	previewNote(newval);
+	PlaybackHandler:playPreview(newval);
 	rom:commitMarkers();
 	
 	for i = 0, math.abs(bytecost) - 1 do
@@ -389,7 +389,7 @@ function Pattern:writePitch(midinote, existingnote, channel)
 		popupText("Pitch not available!", {1,1,1});
 		return; 
 	end
-	if newval ~= 04 then previewNote(newval); end
+	if newval ~= 04 then PlaybackHandler:playPreview(newval); end
 	
 	local ind = existingnote.rom_index;
 	

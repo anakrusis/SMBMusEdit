@@ -11,7 +11,7 @@ require "guipattern"
 local utf8 = require("utf8")
 
 function love.load()
-	VERSION_NAME = "SMBMusEdit pre-0.1.0a test build #1"
+	VERSION_NAME = "SMBMusEdit pre-0.1.0a test build #2"
 	
 	selectedChannel = "tri";
 	selectedPattern = 0;
@@ -351,8 +351,7 @@ function popupText(text,color)
 end
 
 function selectSong(index)
-	PlaybackHandler:stop(); 
-	PlaybackHandler.playpos = 0; PlaybackHandler.songpos = 0;
+	PlaybackHandler:stop(); PlaybackHandler:reset();
 	selectedSong = index; selectedPattern = 0; selectedChannel = "pulse2";
 	
 	if rom.path then
