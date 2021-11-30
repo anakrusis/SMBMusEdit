@@ -72,6 +72,38 @@ function PlaybackHandler:toggleMute(channel)
 		else
 			self.sources[channel]:stop();
 		end
+		-- cant be soloed and muted at the same time
+		self.solo[channel]  = false;
+	else
+		for key, value in pairs(self.muted) do
+			self.solo[key]  = false;
+		end
+	end
+end
+
+function PlaybackHandler:toggleSolo(channel)
+	self.solo[channel] = not self.solo[channel];
+	self.muted[channel] = false;
+	
+	if self.solo[channel] then
+		for key, value in pairs(self.muted) do
+			if key ~= channel then
+				self.muted[key] = true;
+				self.solo[key]  = false;
+				
+				if key == "noise" then
+					self.sources["kick"]:stop();
+					self.sources[ "ch" ]:stop();
+					self.sources[ "oh" ]:stop();
+				else
+					self.sources[key]:stop();
+				end
+			end
+		end
+	else
+		for key, value in pairs(self.muted) do
+			self.muted[key] = false;
+		end
 	end
 end
 
@@ -204,7 +236,6 @@ end
 
 function PlaybackHandler:stop()
 	for key, value in pairs(self.sources) do
-		--print(key)
 		self.sources[key]:stop();
 	end
 	self.playing = false;

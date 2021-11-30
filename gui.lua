@@ -63,12 +63,10 @@ function initGUI()
 		self.width = WINDOW_WIDTH;
 	end	
 	local file = GuiElement.new(0,0,100,50,GROUP_TOPBAR,"File");
-	--{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="file", text="File"};
 	function file:onClick()
 		openGUIWindow( GROUP_FILE );
 	end
 	local edit = GuiElement.new(0,0,100,50,GROUP_TOPBAR,"Edit");
-	--{x=0,y=0,width=100,height=50,parent=GROUP_TOPBAR, name="edit", text="Edit"};
 	function edit:onClick()
 		openGUIWindow( GROUP_EDIT );
 	end
@@ -85,8 +83,7 @@ function initGUI()
 	GROUP_PTRN_EDIT.ELM_TRI    = ElementPatternContainer.new("tri");
 	GROUP_PTRN_EDIT.ELM_NOISE  = ElementPatternContainer.new("noise");
 	
-	-- PTRN SIDE: The sidebar displaying the names of the channels
-	-- in the future it will have [Mute][Solo}
+	-- PTRN SIDE: The sidebar displaying the names of the channels, also [Mute][Solo}
 	GROUP_PTRN_SIDE = GuiElement.new(0,120,100,100); GROUP_PTRN_SIDE.autosize = true; GROUP_PTRN_SIDE.padding = 0;
 	GROUP_PTRN_SIDE.ELM_PULSE2 = ElementPatternSide.new("pulse2","Pulse 2");
 	GROUP_PTRN_SIDE.ELM_PULSE1 = ElementPatternSide.new("pulse1","Pulse 1");
@@ -97,10 +94,8 @@ function initGUI()
 	end
 	
 	GROUP_FILE = GuiElement.new(0,55,500,3); GROUP_FILE.autopos = "left"; GROUP_FILE.autosize = true;
-	--{x=0, y=55, width=500, height=3, name="file_container", autopos = "left", autosize = true};
 	GROUP_FILE:hide();
 	local export = GuiElement.new(0,0,200,50,GROUP_FILE,"Export ROM");
-	--{x=0,y=0,width=200,height=50,parent=GROUP_FILE, name="export", text="Export ROM"};
 	function export:onClick()
 		rom:export(rom.path);
 		GROUP_FILE:hide(); openGUIWindow( GROUP_EXPORT_SUCCESS );
@@ -110,10 +105,8 @@ function initGUI()
 	end
 	
 	GROUP_EDIT = GuiElement.new(97,55,500,3); GROUP_EDIT.autopos = "top"; GROUP_EDIT.autosize = true;
-	--{x=97, y=55, width=500, height=3, name="edit_container", autopos = "top", autosize = true}; 
 	GROUP_EDIT:hide();
 	local optimize = GuiElement.new(0,0,275,50,GROUP_EDIT,"Optimize...");
-	--{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="optimize", text="Optimize..."};
 	function optimize:onClick()
 		openGUIWindow( GROUP_OPTIMIZE );
 	end
@@ -121,7 +114,6 @@ function initGUI()
 		return rom.path ~= nil
 	end
 	local ptredit = GuiElement.new(0,0,275,50,GROUP_EDIT,"Pointer Edit...");
-	--{x=0,y=0,width=275,height=50,parent=GROUP_EDIT, name="ptredit", text="Pointer Edit..."};
 	function ptredit:onClick()
 		openGUIWindow( GROUP_PNTR_EDIT );
 	end
@@ -130,11 +122,9 @@ function initGUI()
 	end
 	
 	GROUP_OPTIMIZE = GuiElement.new(55,55,600,3); GROUP_OPTIMIZE.autosize = true; 
-	GROUP_OPTIMIZE.autocenterX = true; GROUP_OPTIMIZE.autocenterY = true;
-	--{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; 
+	GROUP_OPTIMIZE.autocenterX = true; GROUP_OPTIMIZE.autocenterY = true; 
 	GROUP_OPTIMIZE:hide();
 	local optimize = GuiElement.new(0,0,800,600,GROUP_OPTIMIZE);
-	--{x=0,y=0,width=800,height=600,parent=GROUP_OPTIMIZE, text=""};
 	function optimize:onUpdate()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
@@ -224,7 +214,6 @@ function initGUI()
 		end			
 	end
 	GROUP_OPTIMIZE.BTN_ALLOCATE = GuiElement.new(0,0,375,50,GROUP_OPTIMIZE, "Allocate Unused Byte");
-	--{x=0,y=0,width=375,height=50,parent=GROUP_OPTIMIZE, text="Allocate Unused Byte"};
 	function GROUP_OPTIMIZE.BTN_ALLOCATE:onClick()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
@@ -232,7 +221,6 @@ function initGUI()
 	end
 	
 	GROUP_OPTIMIZE.BTN_BACK = GuiElement.new(0,0,100,50,GROUP_OPTIMIZE,"Back");
-	--{x=0,y=0,width=100,height=50,parent=GROUP_OPTIMIZE, text="Back"};
 	function GROUP_OPTIMIZE.BTN_BACK:onClick()
 		GROUP_EDIT:hide(); GROUP_OPTIMIZE:hide(); openGUIWindow( GROUP_TOPBAR );
 	end
@@ -392,12 +380,18 @@ function initGUI()
 		-- GROUP_PARSE_ERROR:hide(); GROUP_PARSE_ERROR.active = false;
 	-- end
 	
-	-- GROUP_EXPORT_SUCCESS = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_EXPORT_SUCCESS:hide();
-	-- GROUP_EXPORT_SUCCESS.ELM_BODY = GuiElement:new{x=0,y=0,width=450,height=130,parent=GROUP_EXPORT_SUCCESS, text="Successfully exported!\n\nRemember to back up your work frequently. This program is very unstable!"};
-	-- GROUP_EXPORT_SUCCESS.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_EXPORT_SUCCESS, text="OK"};
-	-- function GROUP_EXPORT_SUCCESS.BTN_BACK:onClick()
-		-- GROUP_EXPORT_SUCCESS:hide(); openGUIWindow( GROUP_TOPBAR );
-	-- end
+	GROUP_EXPORT_SUCCESS = GuiElement.new(55,55,600,3);
+	GROUP_EXPORT_SUCCESS.autopos = "top"; GROUP_EXPORT_SUCCESS.autosize = true;
+	GROUP_EXPORT_SUCCESS.autocenterX = true; GROUP_EXPORT_SUCCESS.autocenterY = true;
+	--{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true};
+	GROUP_EXPORT_SUCCESS:hide();
+	GROUP_EXPORT_SUCCESS.ELM_BODY = GuiElement.new(0,0,450,130,GROUP_EXPORT_SUCCESS,"Successfully exported!\n\nRemember to back up your work frequently. This program is very unstable!");
+	--{x=0,y=0,width=450,height=130,parent=GROUP_EXPORT_SUCCESS, text="Successfully exported!\n\nRemember to back up your work frequently. This program is very unstable!"};
+	GROUP_EXPORT_SUCCESS.BTN_BACK = GuiElement.new(0,0,100,50,GROUP_EXPORT_SUCCESS,"OK");
+	--{x=0,y=0,width=100,height=50,parent=GROUP_EXPORT_SUCCESS, text="OK"};
+	function GROUP_EXPORT_SUCCESS.BTN_BACK:onClick()
+		GROUP_EXPORT_SUCCESS:hide(); openGUIWindow( GROUP_TOPBAR );
+	end
 	
 	openGUIWindow(GROUP_TOPBAR);
 	GROUP_PTRN_EDIT:hide();

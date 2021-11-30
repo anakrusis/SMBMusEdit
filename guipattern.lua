@@ -129,6 +129,11 @@ function ElementPatternSide.new(channel,text)
 	function solo:onClick()
 		PlaybackHandler:toggleSolo(channel);
 	end
+	function solo:onRender()
+		if PlaybackHandler.solo[channel] then
+			love.graphics.circle("line", self.dispx + (self.dispwidth/2), self.dispy + (self.dispheight/2), 18);
+		end
+	end
 	
 	local mute = GuiElement.new(0,120,40,40,self,"M");
 	function mute:onClick()
