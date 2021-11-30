@@ -1,4 +1,6 @@
-elements = {};
+require "guielement"
+require "guipattern"
+require "guitextentry"
 
 function initGUI()
 	GUI_SCALE = 1; bypassGameClick = false;
@@ -50,6 +52,11 @@ function initGUI()
 	function prevptrn:onClick()
 		local song = songs[selectedSong];
 		selectedPattern = ((selectedPattern - 1) % song.patternCount);	
+	end
+	local currptrn = GuiElement.new(0,0,120,50,GROUP_TOPBAR2);
+	function currptrn:onUpdate()
+		local song = songs[selectedSong];
+		self.text = "#" .. selectedPattern .. "/" .. song.patternCount-1;
 	end
 	local nextptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"P>");
 	function nextptrn:onClick()
@@ -225,160 +232,162 @@ function initGUI()
 		GROUP_EDIT:hide(); GROUP_OPTIMIZE:hide(); openGUIWindow( GROUP_TOPBAR );
 	end
 	
-	-- GROUP_PNTR_EDIT = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_PNTR_EDIT:hide();
-	-- local pointeredit = GuiElement:new{x=0,y=0,width=620,height=400,parent=GROUP_PNTR_EDIT, text=""};
-	-- function pointeredit:onUpdate()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- local infostr = "Current Pattern: ";
-		-- infostr = infostr .. ptrn:getName();
-		-- infostr = infostr .. "\n\n---\n\nPtr to Header:     + $791D = $" .. string.format("%04X", ptrn.header_start_index);
-		-- infostr = infostr .. "\n\nPtr to Pulse 2: $      ";
-		-- infostr = infostr .. "\n\nPtr to Pulse 1: $" .. string.format("%04X", ptrn.pulse2_start_index) .. 
-		-- " +    = $" .. string.format("%04X", ptrn.pulse1_start_index);
-		-- infostr = infostr .. "\n\nPtr to Tri:     $" .. string.format("%04X", ptrn.pulse2_start_index) .. 
-		-- " +    = $" .. string.format("%04X", ptrn.tri_start_index);
+	GROUP_PNTR_EDIT = GuiElement.new(55,55,600,3);
+	GROUP_PNTR_EDIT.autopos = "top"; GROUP_PNTR_EDIT.autosize = true;
+	GROUP_PNTR_EDIT.autocenterX = true; GROUP_PNTR_EDIT.autocenterY = true;
+	GROUP_PNTR_EDIT:hide();
+	--{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; 
+	GROUP_PNTR_EDIT.ELM_BODY = GuiElement.new(0,0,620,400,GROUP_PNTR_EDIT);
+	--{x=0,y=0,width=620,height=400,parent=GROUP_PNTR_EDIT, text=""};
+	function GROUP_PNTR_EDIT.ELM_BODY:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local infostr = "Current Pattern: ";
+		infostr = infostr .. ptrn:getName();
+		infostr = infostr .. "\n\n---\n\nPtr to Header:     + $791D = $" .. string.format("%04X", ptrn.header_start_index);
+		infostr = infostr .. "\n\nPtr to Pulse 2: $      ";
+		infostr = infostr .. "\n\nPtr to Pulse 1: $" .. string.format("%04X", ptrn.pulse2_start_index) .. 
+		" +    = $" .. string.format("%04X", ptrn.pulse1_start_index);
+		infostr = infostr .. "\n\nPtr to Tri:     $" .. string.format("%04X", ptrn.pulse2_start_index) .. 
+		" +    = $" .. string.format("%04X", ptrn.tri_start_index);
 		
-		-- if ptrn.hasNoise then
-			-- infostr = infostr .. "\n\nPtr to Noise:   $" .. string.format("%04X", ptrn.pulse2_start_index) .. 
-			-- " +    = $" .. string.format("%04X", ptrn.noise_start_index);
-		-- end
+		if ptrn.hasNoise then
+			infostr = infostr .. "\n\nPtr to Noise:   $" .. string.format("%04X", ptrn.pulse2_start_index) .. 
+			" +    = $" .. string.format("%04X", ptrn.noise_start_index);
+		end
 		
-		-- self.text = infostr;
-	-- end
+		self.text = infostr;
+	end
 	
-	-- local noiseptr = GuiElement:new{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
-	-- function noiseptr:onUpdate()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- if ptrn.hasNoise then self:show(); else self:hide(); return; end
-		-- self.x = pointeredit.dispx + 385;
-		-- self.y = pointeredit.dispy + 242;
-		-- if selectedTextEntry and selectedTextBox == self then
-			-- self.text = selectedTextEntry;
-		-- else
-			-- self.text = string.format("%02X", rom:get(ptrn.header_start_index + 5));
-		-- end
-	-- end
-	-- function noiseptr:onClick()
-		-- selectedTextBox = self;
-		-- selectedTextEntry = self.text;
-	-- end
-	-- function noiseptr:onCommit()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- local hex = tonumber(self.text,16);
-		-- rom:put( ptrn.header_start_index + 5, hex )
-		-- parseAllSongs();
-	-- end
+	local noiseptr = ElementTextEntry.new(65,40,GROUP_PNTR_EDIT.ELM_BODY,2); noiseptr.staticposition = true;
+	--{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
+	function noiseptr:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		if ptrn.hasNoise then self:show(); else self:hide(); return; end
+		self.x = self.parent.dispx + 385;
+		self.y = self.parent.dispy + 242;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%02X", rom:get(ptrn.header_start_index + 5));
+		end
+	end
+	function noiseptr:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local hex = tonumber(self.text,16);
+		rom:put( ptrn.header_start_index + 5, hex )
+		parseAllSongs();
+	end
 	
-	-- local triptr = GuiElement:new{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
-	-- function triptr:onUpdate()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- self.x = pointeredit.dispx + 385;
-		-- self.y = pointeredit.dispy + 200;
-		-- if selectedTextEntry and selectedTextBox == self then
-			-- self.text = selectedTextEntry;
-		-- else
-			-- self.text = string.format("%02X", rom:get(ptrn.header_start_index + 3));
-		-- end
-	-- end
-	-- function triptr:onClick()
-		-- selectedTextBox = self;
-		-- selectedTextEntry = self.text;
-	-- end
-	-- function triptr:onCommit()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- local hex = tonumber(self.text,16);
-		-- rom:put( ptrn.header_start_index + 3, hex )
-		-- parseAllSongs();
-	-- end
+	local triptr = ElementTextEntry.new(65,40,GROUP_PNTR_EDIT.ELM_BODY,2); triptr.staticposition = true;
+	--{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
+	function triptr:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		self.x = self.parent.dispx + 385;
+		self.y = self.parent.dispy + 200;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%02X", rom:get(ptrn.header_start_index + 3));
+		end
+	end
+	function triptr:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local hex = tonumber(self.text,16);
+		rom:put( ptrn.header_start_index + 3, hex )
+		parseAllSongs();
+	end
 	
-	-- local p1ptr = GuiElement:new{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
-	-- function p1ptr:onUpdate()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- self.x = pointeredit.dispx + 385;
-		-- self.y = pointeredit.dispy + 158;
-		-- if selectedTextEntry and selectedTextBox == self then
-			-- self.text = selectedTextEntry;
-		-- else
-			-- self.text = string.format("%02X", rom:get(ptrn.header_start_index + 4));
-		-- end
-	-- end
-	-- function p1ptr:onClick()
-		-- selectedTextBox = self;
-		-- selectedTextEntry = self.text;
-	-- end
-	-- function p1ptr:onCommit()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- local hex = tonumber(self.text,16);
-		-- rom:put( ptrn.header_start_index + 4, hex )
-		-- parseAllSongs();
-	-- end
+	local p1ptr = ElementTextEntry.new(65,40,GROUP_PNTR_EDIT.ELM_BODY,2); p1ptr.staticposition = true;
+	--{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
+	function p1ptr:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		self.x = self.parent.dispx + 385;
+		self.y = self.parent.dispy + 158;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%02X", rom:get(ptrn.header_start_index + 4));
+		end
+	end
+	function p1ptr:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local hex = tonumber(self.text,16);
+		rom:put( ptrn.header_start_index + 4, hex )
+		parseAllSongs();
+	end
 	
-	-- local p2ptr = GuiElement:new{x=0,y=0,width=100,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 4};
-	-- function p2ptr:onUpdate()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- self.x = pointeredit.dispx + 285;
-		-- self.y = pointeredit.dispy + 115;
-		-- if selectedTextEntry and selectedTextBox == self then
-			-- self.text = selectedTextEntry;
-		-- else
-			-- self.text = string.format("%04X", ptrn.pulse2_start_index);
-		-- end
-	-- end
-	-- function p2ptr:onClick()
-		-- selectedTextBox = self;
-		-- selectedTextEntry = self.text;
-	-- end
-	-- function p2ptr:onCommit()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- local hex = tonumber(self.text,16);
-		-- rom:putWord(ptrn.header_start_index + 1, (0x8000 + hex) - 0x10);
-		-- parseAllSongs();
-	-- end
+	local p2ptr = ElementTextEntry.new(100,40,GROUP_PNTR_EDIT.ELM_BODY,4); p2ptr.staticposition = true;
+	--{x=0,y=0,width=100,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 4};
+	function p2ptr:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		self.x = self.parent.dispx + 285;
+		self.y = self.parent.dispy + 115;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%04X", ptrn.pulse2_start_index);
+		end
+	end
+	function p2ptr:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local hex = tonumber(self.text,16);
+		rom:putWord(ptrn.header_start_index + 1, (0x8000 + hex) - 0x10);
+		parseAllSongs();
+	end
 	
-	-- local pointer = GuiElement:new{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
-	-- function pointer:onUpdate()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- self.x = pointeredit.dispx + 250;
-		-- self.y = pointeredit.dispy + 75;
-		-- if selectedTextEntry and selectedTextBox == self then
-			-- self.text = selectedTextEntry;
-		-- else
-			-- self.text = string.format("%02X", rom:get(ptrn.ptr_index));
-		-- end
-	-- end
-	-- function pointer:onClick()
-		-- selectedTextBox = self;
-		-- selectedTextEntry = self.text;
-	-- end
-	-- function pointer:onCommit()
-		-- local song = songs[selectedSong];
-		-- local ptrn = song.patterns[selectedPattern];
-		-- local hex = tonumber(self.text,16);
-		-- rom:put( ptrn.ptr_index, hex )
-		-- parseAllSongs();
-	-- end
+	local pointer = ElementTextEntry.new(65,40,GROUP_PNTR_EDIT.ELM_BODY,2); pointer.staticposition = true;
+	--{x=0,y=0,width=65,height=40,parent=pointeredit, text="", staticposition = true, maxlen = 2};
+	function pointer:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		self.x = self.parent.dispx + 250;
+		self.y = self.parent.dispy + 75;
+		if selectedTextEntry and selectedTextBox == self then
+			self.text = selectedTextEntry;
+		else
+			self.text = string.format("%02X", rom:get(ptrn.ptr_index));
+		end
+	end
+	function pointer:onClick()
+		selectedTextBox = self;
+		selectedTextEntry = self.text;
+	end
+	function pointer:onCommit()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		local hex = tonumber(self.text,16);
+		rom:put( ptrn.ptr_index, hex )
+		parseAllSongs();
+	end
 	
-	-- GROUP_PNTR_EDIT.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_PNTR_EDIT, text="Back"};
-	-- function GROUP_PNTR_EDIT.BTN_BACK:onClick()
-		-- GROUP_EDIT:hide(); GROUP_PNTR_EDIT:hide(); openGUIWindow( GROUP_TOPBAR );
-	-- end
+	GROUP_PNTR_EDIT.BTN_BACK = GuiElement.new(0,0,100,50,GROUP_PNTR_EDIT,"Back");
+	--{x=0,y=0,width=100,height=50,parent=GROUP_PNTR_EDIT, text="Back"};
+	function GROUP_PNTR_EDIT.BTN_BACK:onClick()
+		GROUP_EDIT:hide(); GROUP_PNTR_EDIT:hide(); openGUIWindow( GROUP_TOPBAR );
+	end
 	
-	-- GROUP_PARSE_ERROR = GuiElement:new{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; GROUP_PARSE_ERROR:hide();
-	-- GROUP_PARSE_ERROR.ELM_BODY = GuiElement:new{x=0,y=0,width=450,height=350,parent=GROUP_PARSE_ERROR, text=""};
-	-- GROUP_PARSE_ERROR.BTN_BACK = GuiElement:new{x=0,y=0,width=100,height=50,parent=GROUP_PARSE_ERROR, text="OK"};
-	-- function GROUP_PARSE_ERROR.BTN_BACK:onClick()
-		-- GROUP_PARSE_ERROR:hide(); GROUP_PARSE_ERROR.active = false;
-	-- end
+	-- PARSE ERROR: Shows up when an error happens in parsing song data and it can't continue
+	GROUP_PARSE_ERROR = GuiElement.new(55,55,600,3);
+	GROUP_PARSE_ERROR.autopos = "top"; GROUP_PARSE_ERROR.autosize = true;
+	GROUP_PARSE_ERROR.autocenterX = true; GROUP_PARSE_ERROR.autocenterY = true;
+	--{x=55, y=55, width=600, height=3, autopos = "top", autosize = true, autocenterX = true, autocenterY = true}; 
+	GROUP_PARSE_ERROR:hide();
+	GROUP_PARSE_ERROR.ELM_BODY = GuiElement.new(0,0,450,350,GROUP_PARSE_ERROR);
+	--{x=0,y=0,width=450,height=350,parent=GROUP_PARSE_ERROR, text=""};
+	GROUP_PARSE_ERROR.BTN_BACK = GuiElement.new(0,0,100,50,GROUP_PARSE_ERROR,"OK");
+	--{x=0,y=0,width=100,height=50,parent=GROUP_PARSE_ERROR, text="OK"};
+	function GROUP_PARSE_ERROR.BTN_BACK:onClick()
+		GROUP_PARSE_ERROR:hide(); GROUP_PARSE_ERROR.active = false;
+	end
 	
 	GROUP_EXPORT_SUCCESS = GuiElement.new(55,55,600,3);
 	GROUP_EXPORT_SUCCESS.autopos = "top"; GROUP_EXPORT_SUCCESS.autosize = true;

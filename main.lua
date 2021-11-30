@@ -5,8 +5,6 @@ require "bitwise"
 require "playback"
 require "render"
 require "gui"
-require "guielement"
-require "guipattern"
 
 local utf8 = require("utf8")
 
@@ -144,6 +142,7 @@ end
 function love.keypressed(key)
 	if selectedTextEntry then
 		if key == "return" then
+			if not tonumber(selectedTextBox.text,16) then return end
 			selectedTextBox:onCommit();
 			selectedTextBox = nil;
 			selectedTextEntry = nil;
