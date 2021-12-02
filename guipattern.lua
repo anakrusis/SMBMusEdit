@@ -56,17 +56,18 @@ function ElementPattern.new(parent, song, pattern, channel)
 end
 setmetatable(ElementPattern, {__index = GuiElement});
 
-function ElementPattern:onClick()
+function ElementPattern:onClick(x,y)
 	local ptrn = songs[self.song].patterns[self.pattern];
 	selectedPattern = self.pattern;
 	selectedChannel = self.channel;
 	
-	-- todo make the position set to the position at which it is clicked
-	PlaybackHandler.setsongpos = ptrn.starttime;
-	PlaybackHandler.setplaypos = 0;
-	PlaybackHandler.setPattern = self.pattern;
+	-- sets the position of the playhead relative to wherever you clicked in this button
+	local relx = x - self.dispx;
+	local tick = (relx / self.dispwidth) * ptrn.duration;
 	
-	print(self.dispheight);
+	PlaybackHandler.setsongpos = ptrn.starttime + tick;
+	PlaybackHandler.setplaypos = tick;
+	PlaybackHandler.setPattern = self.pattern;
 end
 function ElementPattern:onUpdate()
 	local ptrn = songs[self.song].patterns[self.pattern];

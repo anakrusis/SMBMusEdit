@@ -304,7 +304,7 @@ function GuiElement:click(x,y)
 		and y > self.dispy*GUI_SCALE and y < (self.dispy + self.dispheight)* GUI_SCALE ) then
 			
 			if self:getEnabledCondition() then
-				self:onClick(); 
+				self:onClick(x,y); 
 				bypassGameClick = true;
 			end
 		end
@@ -312,7 +312,7 @@ function GuiElement:click(x,y)
 end
 	
 -- This one is empty and left to be defined individually
-function GuiElement:onClick()
+function GuiElement:onClick(x,y)
 	
 end
 	

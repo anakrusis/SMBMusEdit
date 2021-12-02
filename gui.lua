@@ -58,6 +58,9 @@ function initGUI()
 		local song = songs[selectedSong];
 		self.text = "#" .. selectedPattern .. "/" .. song.patternCount-1;
 	end
+	function currptrn:onClick()
+		openGUIWindow( GROUP_PNTR_EDIT );
+	end
 	local nextptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"P>");
 	function nextptrn:onClick()
 		local song = songs[selectedSong];
