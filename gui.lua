@@ -14,7 +14,8 @@ function initGUI()
 	-- text that shows up for errors and other info bits at the bottom
 	popup_timer = 0; popup_color = {}; popup_text = ""; popup_start = 0;
 	
-	DRAGGING_NOTE = nil;
+	PENCIL_MODE = true;
+	DRAGGING_NOTE = nil; PLACING_NOTE = false; REMOVING_NOTE = false;
 	PTRN_END_DRAGGING = false;
 	
 	-- string for editing

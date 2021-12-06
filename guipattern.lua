@@ -57,17 +57,20 @@ end
 setmetatable(ElementPattern, {__index = GuiElement});
 
 function ElementPattern:onClick(x,y)
-	local ptrn = songs[self.song].patterns[self.pattern];
-	selectedPattern = self.pattern;
-	selectedChannel = self.channel;
+	selectPattern(self.song, self.pattern, self.channel);
 	
+	local ptrn = songs[self.song].patterns[self.pattern];
 	-- sets the position of the playhead relative to wherever you clicked in this button
 	local relx = x - self.dispx;
 	local tick = (relx / self.dispwidth) * ptrn.duration;
+	-- rounds it to the nearest quarter note
+	tick = tick - ( tick % ptrn.quarter_note_duration );
 	
 	PlaybackHandler.setsongpos = ptrn.starttime + tick;
 	PlaybackHandler.setplaypos = tick;
-	PlaybackHandler.setPattern = self.pattern;
+	
+	PIANOROLL_SCROLLX =  tick -- + piano_roll_untrax(WINDOW_WIDTH / 2) --- piano_roll_untrax(SIDE_PIANO_WIDTH);
+	print("tick " .. tick .. " scrollx " .. PIANOROLL_SCROLLX);
 end
 function ElementPattern:onUpdate()
 	local ptrn = songs[self.song].patterns[self.pattern];
@@ -77,6 +80,17 @@ end
 
 function ElementPattern:onRender()
 	local ptrn = songs[self.song].patterns[self.pattern];
+	local qnd = ptrn.quarter_note_duration;
+	local dur = ptrn.duration;
+	
+	if qnd ~= 0 then
+		for i = 0, (dur / (qnd)) do
+			love.graphics.setColor(0,0,0,0.25);
+			local x = ((qnd * i) * (dur / self.dispwidth)) + self.dispx
+			love.graphics.line(x,self.dispy,x,self.dispy+self.dispheight);
+		end
+	end
+	
 	local notes = ptrn:getNotes( self.channel );
 	
 	local hiindex = ptrn:getHighestNote( self.channel );

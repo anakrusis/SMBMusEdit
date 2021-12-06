@@ -9,7 +9,7 @@ require "gui"
 local utf8 = require("utf8")
 
 function love.load()
-	VERSION_NAME = "SMBMusEdit pre-0.1.0a test build #2"
+	VERSION_NAME = "SMBMusEdit pre-0.1.0a test build #3"
 	
 	selectedChannel = "tri";
 	selectedPattern = 0;
@@ -206,22 +206,43 @@ function love.mousepressed( x,y,button )
 				
 			-- clicking elsewhere in the piano roll:
 			elseif love.mouse.getX() > SIDE_PIANO_WIDTH then
-				local note = math.ceil(piano_roll_untray(y));
+				local pitch = math.ceil(piano_roll_untray(y));
 				local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
 				
-				-- no note present in this space? must be past the edge of pattern. try appending a note
-				if (not existingnote) then
-					ptrn:appendNote(note, tick, selectedChannel);
-					return;
-				end
-				
 				-- clicking the right edge of a note: initates dragging for rhythm changing
+				-- (This will happen regardless of the pencil mode stuff below)
+				if existingnote then
 				if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
 					DRAGGING_NOTE = existingnote.noteindex;
+					return;
+				end
+				end
+				
+				-- pencil tool: all the direct note placement/removal actions
+				-- (can also drag the edge of notes too)
+				if PENCIL_MODE then
+					-- no note present in this space? must be past the edge of pattern. try appending a note
+					if (not existingnote) then
+						ptrn:appendNote(pitch, tick, selectedChannel);
+						return;
+					end
 					
-				-- otherwise places/removes notes where notes are present
+					-- click within bounds: deciding to initiate either multiple note removing or placing...
+					-- if a rest, or the note value differs, then place a new note here.
+					if existingnote.pitch ~= pitch or existingnote.val == 0x04 then
+						ptrn:writePitch(pitch,existingnote,selectedChannel);
+						PLACING_NOTE = true;
+					
+					-- if a note, and the note value is the same, then remove the current note here
+					else
+						ptrn:writePitch(existingnote.pitch,existingnote,selectedChannel);
+						REMOVING_NOTE = true;
+					end
+					
+				-- not pencil tool: (todo)note selection, dragging of notes
+				-- it will also set the playhead if clicked somewhere
 				else
-					ptrn:writePitch(note,existingnote,selectedChannel);
+				
 				end
 			end
 		end
@@ -231,6 +252,8 @@ end
 function love.mousereleased( x,y,button )
 	DRAGGING_NOTE = nil;
 	PTRN_END_DRAGGING = false;
+	PLACING_NOTE = false;
+	REMOVING_NOTE = false;
 end
 
 function love.mousemoved( x, y, dx, dy, istouch )
@@ -265,6 +288,23 @@ function love.mousemoved( x, y, dx, dy, istouch )
 			elseif love.mouse.getX() < SIDE_PIANO_WIDTH then
 				PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
 				PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
+				
+			-- dragging over existing notes: overwrites their note values
+			elseif PLACING_NOTE then 
+				local pitch = math.ceil(piano_roll_untray(y));
+				local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
+				
+				if existingnote and existingnote.pitch ~= pitch then
+					ptrn:writePitch(pitch,existingnote,selectedChannel);
+				end
+			-- ditto but also can remove them
+			elseif REMOVING_NOTE then
+				local pitch = math.ceil(piano_roll_untray(y));
+				local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
+				
+				if existingnote and existingnote.pitch == pitch then
+					ptrn:writePitch(existingnote.pitch,existingnote,selectedChannel);
+				end
 			end
 		end
 	end
@@ -360,6 +400,22 @@ function selectSong(index)
 		love.window.setTitle(rom.filename .. " [" .. songs[index].name .. "] - " .. VERSION_NAME)
 	end
 	PATTERN_SCROLL = 0;
+	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0;
+end
+
+function selectPattern(song, index, chnl)
+	local ptrn = songs[song].patterns[index];
+	selectedPattern = index;
+	selectedChannel = chnl;
+	
+	-- sets the position of the playhead relative to wherever you clicked in this button
+	--local relx = x - self.dispx;
+	--local tick = (relx / self.dispwidth) * ptrn.duration;
+	
+	PlaybackHandler.setsongpos = ptrn.starttime; --+ tick;
+	PlaybackHandler.setplaypos = 0;
+	PlaybackHandler.setPattern = index;
+	
 	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0;
 end
 
