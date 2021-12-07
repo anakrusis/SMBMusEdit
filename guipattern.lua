@@ -70,7 +70,7 @@ function ElementPattern:onClick(x,y)
 	PlaybackHandler.setplaypos = tick;
 	
 	PIANOROLL_SCROLLX =  tick -- + piano_roll_untrax(WINDOW_WIDTH / 2) --- piano_roll_untrax(SIDE_PIANO_WIDTH);
-	print("tick " .. tick .. " scrollx " .. PIANOROLL_SCROLLX);
+	--print("tick " .. tick .. " scrollx " .. PIANOROLL_SCROLLX);
 end
 function ElementPattern:onUpdate()
 	local ptrn = songs[self.song].patterns[self.pattern];

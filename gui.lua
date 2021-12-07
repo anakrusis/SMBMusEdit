@@ -17,6 +17,8 @@ function initGUI()
 	PENCIL_MODE = true;
 	DRAGGING_NOTE = nil; PLACING_NOTE = false; REMOVING_NOTE = false;
 	PTRN_END_DRAGGING = false;
+	-- eelection rectangle (not the notes, just the position on the screen)
+	SELECTION_P1X = nil; SELECTION_P1Y = nil; SELECTION_P2X = nil; SELECTION_P2Y = nil;
 	
 	-- string for editing
 	selectedTextEntry = nil;
@@ -80,6 +82,49 @@ function initGUI()
 	local edit = GuiElement.new(0,0,100,50,GROUP_TOPBAR,"Edit");
 	function edit:onClick()
 		openGUIWindow( GROUP_EDIT );
+	end
+	
+	GROUP_PIANOROLL_EDIT = GuiElement.new(-50,120,500,60); GROUP_PIANOROLL_EDIT.autopos = "right";
+	GROUP_PIANOROLL_EDIT.autosize = true; GROUP_PIANOROLL_EDIT.name = "pnorolledit";
+	function GROUP_PIANOROLL_EDIT:onUpdate()
+		local pad = 32;
+		self.x = WINDOW_WIDTH - self.dispwidth - pad * 2;
+		self.y = DIVIDER_POS  + PIANOROLL_TOPBAR_HEIGHT + pad; 
+	end
+	local pcl = GuiElement.new(0,0,54,54,GROUP_PIANOROLL_EDIT,"");
+	function pcl:onClick()
+		PENCIL_MODE = true;
+	end
+	function pcl:onUpdate()
+		if PENCIL_MODE then self.bg_color = {0,0,0.5} else self.bg_color = {0,0,0} end
+	end
+	function pcl:onRender()
+		love.graphics.draw(TEXTURE_PENCIL, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
+	end
+	local slc = GuiElement.new(0,0,54,54,GROUP_PIANOROLL_EDIT,"");
+	function slc:onClick()
+		PENCIL_MODE = false;
+	end
+	function slc:onUpdate()
+		if not PENCIL_MODE then self.bg_color = {0,0,0.5} else self.bg_color = {0,0,0} end
+	end
+	function slc:onRender()
+		love.graphics.draw(TEXTURE_SELECT, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
+	end
+	local bytesavail = GuiElement.new(0,0,140,54,GROUP_PIANOROLL_EDIT,"");
+	function bytesavail:onUpdate()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		if not ptrn then return end
+		-- Bytes free out of bytes total enqueued
+		local bytes_str = ptrn:getBytesUsed(selectedChannel) .. "/" .. ptrn:getBytesAvailable(selectedChannel);
+		self.text = bytes_str;
+	end
+	function bytesavail:onClick()
+		openGUIWindow( GROUP_OPTIMIZE );
+	end
+	function bytesavail:getEnabledCondition()
+		return rom.path ~= nil
 	end
 	
 	-- PTRN EDIT: The main pattern editor container and its four tracks, these are dynamically filled elsewhere
@@ -429,6 +474,7 @@ function openGUIWindow( element )
 		end
 		GROUP_TOPBAR2.active = true;  GROUP_TOPBAR2:show();
 		GROUP_PTRN_SIDE.active = true; GROUP_PTRN_SIDE:show();
+		GROUP_PIANOROLL_EDIT.active = true; GROUP_PIANOROLL_EDIT:show();
 	end
 	
 	element.active = true;

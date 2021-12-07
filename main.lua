@@ -15,6 +15,11 @@ function love.load()
 	selectedPattern = 0;
 	selectedSong    = 0;
 	
+	love.graphics.setDefaultFilter("nearest");
+	TEXTURE_PENCIL = love.graphics.newImage("assets/pencil.png");
+	TEXTURE_SELECT = love.graphics.newImage("assets/select.png");
+	CURSOR_PENCIL  = love.mouse.newCursor( "assets/pencil.png", 0, 15 )
+	
 	love.window.setTitle(VERSION_NAME);
 	success = love.window.setMode( 800, 800, {resizable=true, minwidth=800, minheight=600} )
 	love.window.setVSync( 1 );
@@ -170,6 +175,9 @@ function love.keypressed(key)
 				end
 			end
 		end
+		if key == "b" then
+			PENCIL_MODE = not PENCIL_MODE;
+		end
 	end
 end
 
@@ -212,7 +220,7 @@ function love.mousepressed( x,y,button )
 				-- clicking the right edge of a note: initates dragging for rhythm changing
 				-- (This will happen regardless of the pencil mode stuff below)
 				if existingnote then
-				if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
+				if (tick > ( existingnote.duration * 0.85 ) + existingnote.starttime) then
 					DRAGGING_NOTE = existingnote.noteindex;
 					return;
 				end
@@ -242,7 +250,7 @@ function love.mousepressed( x,y,button )
 				-- not pencil tool: (todo)note selection, dragging of notes
 				-- it will also set the playhead if clicked somewhere
 				else
-				
+					SELECTION_P1X = love.mouse.getX(); SELECTION_P1Y = love.mouse.getY()
 				end
 			end
 		end
@@ -254,6 +262,7 @@ function love.mousereleased( x,y,button )
 	PTRN_END_DRAGGING = false;
 	PLACING_NOTE = false;
 	REMOVING_NOTE = false;
+	SELECTION_P1X = nil; SELECTION_P1Y = nil; SELECTION_P2X = nil; SELECTION_P2Y = nil;
 end
 
 function love.mousemoved( x, y, dx, dy, istouch )
@@ -283,11 +292,6 @@ function love.mousemoved( x, y, dx, dy, istouch )
 			-- dragging on the top bar of the piano roll: edits the pattern end point
 			elseif (PTRN_END_DRAGGING) then
 				ptrn:changeEndpoint( tick, selectedChannel );
-			
-			-- dragging left and right in the side piano: zooms in and out the y axis of the piano roll
-			elseif love.mouse.getX() < SIDE_PIANO_WIDTH then
-				PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
-				PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
 				
 			-- dragging over existing notes: overwrites their note values
 			elseif PLACING_NOTE then 
@@ -305,6 +309,15 @@ function love.mousemoved( x, y, dx, dy, istouch )
 				if existingnote and existingnote.pitch == pitch then
 					ptrn:writePitch(existingnote.pitch,existingnote,selectedChannel);
 				end
+			elseif SELECTION_P1X then
+				SELECTION_P2X = love.mouse.getX(); SELECTION_P2Y = love.mouse.getY();
+				-- TODO select notes
+			
+			-- dragging left and right in the side piano: zooms in and out the y axis of the piano roll
+			elseif love.mouse.getX() < SIDE_PIANO_WIDTH then
+				PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
+				PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
+			
 			end
 		end
 	end
@@ -327,13 +340,17 @@ function love.mousemoved( x, y, dx, dy, istouch )
 				love.mouse.setCursor( CURSOR_HORIZ )
 			end
 			
+		-- regular note editing
 		elseif love.mouse.getX() > SIDE_PIANO_WIDTH then
+			-- if pencil mode, use pencil cursor by default
+			if PENCIL_MODE then love.mouse.setCursor(CURSOR_PENCIL) end
+			
 			local note = math.ceil(piano_roll_untray(y));
 			local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
 			if (not existingnote) then
 				return;
 			end
-			if (tick > ( existingnote.duration * 0.8 ) + existingnote.starttime) then
+			if (tick > ( existingnote.duration * 0.85 ) + existingnote.starttime) then
 				love.mouse.setCursor( CURSOR_HORIZ )
 			end
 		end
@@ -467,11 +484,10 @@ function love.draw()
 	
 	-- Overlaid text not part of a gui element
 	if (ptrn) then
-		-- Bytes free out of bytes total enqueued
-		love.graphics.setColor( 1,1,1 );
-		local bytes_str = ptrn:getBytesUsed(selectedChannel) .. "/" .. ptrn:getBytesAvailable(selectedChannel);
-		love.graphics.print( bytes_str, WINDOW_WIDTH - 135, DIVIDER_POS + 32 )
-	
+		if SELECTION_P1X and SELECTION_P2X then
+			love.graphics.setColor( 1,1,1 );
+			love.graphics.rectangle("line",SELECTION_P1X,SELECTION_P1Y,SELECTION_P2X-SELECTION_P1X,SELECTION_P2Y-SELECTION_P1Y);
+		end
 	else
 		-- Text when you have nothing loaded in
 		love.graphics.setColor( 1,1,1 );
