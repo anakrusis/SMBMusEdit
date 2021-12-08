@@ -1,11 +1,13 @@
 function pianoroll_trax(x)
-	return PIANOROLL_ZOOMX * (x - PIANOROLL_SCROLLX) + (WINDOW_WIDTH / 2) + SIDE_PIANO_WIDTH; 
+	local side; if selectedChannel == "noise" then side = SIDE_NOISE_WIDTH else side = SIDE_PIANO_WIDTH end
+	return PIANOROLL_ZOOMX * (x - PIANOROLL_SCROLLX) + (WINDOW_WIDTH / 2) + side; 
 end
 function pianoroll_tray(y)
 	return PIANOROLL_ZOOMY * (60 - y - PIANOROLL_SCROLLY ) + DIVIDER_POS + ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 );
 end
 function piano_roll_untrax(x)
-	return ((x - SIDE_PIANO_WIDTH - (WINDOW_WIDTH / 2) ) / PIANOROLL_ZOOMX) + PIANOROLL_SCROLLX;
+	local side; if selectedChannel == "noise" then side = SIDE_NOISE_WIDTH else side = SIDE_PIANO_WIDTH end
+	return ((x - side - (WINDOW_WIDTH / 2) ) / PIANOROLL_ZOOMX) + PIANOROLL_SCROLLX;
 end
 function piano_roll_untray(y)
 	return -((( y - DIVIDER_POS - ( ( WINDOW_HEIGHT - DIVIDER_POS ) / 2 ) ) / PIANOROLL_ZOOMY ) + PIANOROLL_SCROLLY) + 60
@@ -14,15 +16,22 @@ end
 -- maybe this could be renamed to pianoRollBackground or something, not sure
 function renderAvailableNotes( channel )
 	if not NOTES then return end
+	local notesarray;
+	-- noise will display a much more limited set of pitches available (despite others working too, i think)
+	if channel == "noise" then
+		notesarray = { NOTES[0x10], NOTES[0x20], NOTES[0x30] }
+	else
+		notesarray = NOTES;
+	end
 	
-	for i = 0, #NOTES do
+	for i = 0, #notesarray do
 		local ind = i;
 		if ( channel == "pulse1" ) then
 			ind = bitwise.band( ind, 0x3e ) -- 0011 1110
 		end
 		
-		if NOTES[ind] ~= nil then
-			local pitch = NOTES[ind];
+		if notesarray[ind] ~= nil then
+			local pitch = notesarray[ind];
 			if ( channel == "tri" ) then
 				pitch = pitch - 12;
 			end
@@ -170,6 +179,19 @@ function renderOverlap()
 end
 
 function renderSidePiano()
+	-- noise has a totally different side element
+	if selectedChannel == "noise" then
+		--love.graphics.setColor( 0.10,0.10,0.10 );
+		love.graphics.setColor( 0,0,0 );
+		love.graphics.rectangle("fill",0,DIVIDER_POS,SIDE_NOISE_WIDTH,WINDOW_HEIGHT);
+		
+		love.graphics.setColor( 1,1,1 );
+		love.graphics.print("Kick -----",0,pianoroll_tray(NOTES[0x20]))
+		love.graphics.print("Closed Hat",0,pianoroll_tray(NOTES[0x10]))
+		love.graphics.print("Open Hat--",0,pianoroll_tray(NOTES[0x30]))
+		return
+	end
+
 	for i = 31, 103 do
 		local keyy = pianoroll_tray( i );
 		

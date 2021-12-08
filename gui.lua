@@ -9,7 +9,7 @@ function initGUI()
 	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0; PIANOROLL_ZOOMX = 4; PIANOROLL_ZOOMY = 20;
 	PIANOROLL_TOPBAR_HEIGHT = 16;
 	OPTIMIZE_SCROLL   = 0;
-	DIVIDER_POS = 325; SIDE_PIANO_WIDTH = 128; PTRN_SIDE_WIDTH = 250;
+	DIVIDER_POS = 325; SIDE_PIANO_WIDTH = 128; PTRN_SIDE_WIDTH = 250; SIDE_NOISE_WIDTH = 165;
 	
 	-- text that shows up for errors and other info bits at the bottom
 	popup_timer = 0; popup_color = {}; popup_text = ""; popup_start = 0;

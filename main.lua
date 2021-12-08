@@ -182,6 +182,17 @@ function love.keypressed(key)
 		if key == "b" then
 			PENCIL_MODE = not PENCIL_MODE;
 		end
+		-- makes rests out of all notes in selection
+		if key == "delete" then
+			local ptrn = songs[selectedSong].patterns[selectedPattern];
+			local notes = ptrn:getNotes(selectedChannel);
+			for i = 0, #notes do
+				if selectedNotes[i] then
+					local cn = notes[i];
+					ptrn:writePitch(cn.pitch,cn,selectedChannel);
+				end
+			end
+		end
 	end
 end
 
@@ -203,6 +214,7 @@ function love.mousepressed( x,y,button )
 	if (button == 1) then
 		if love.mouse.getY() > DIVIDER_POS then
 			local tick = (piano_roll_untrax(x));
+			local side; if selectedChannel == "noise" then side = SIDE_NOISE_WIDTH else side = SIDE_PIANO_WIDTH end
 			
 			-- clicking the bar at the very top of the piano roll:
 			-- initiates dragging for pattern endpoint changing
@@ -217,7 +229,7 @@ function love.mousepressed( x,y,button )
 				end
 				
 			-- clicking elsewhere in the piano roll:
-			elseif love.mouse.getX() > SIDE_PIANO_WIDTH then
+			elseif love.mouse.getX() > side then
 				local pitch = math.ceil(piano_roll_untray(y));
 				local existingnote = ptrn:getNoteAtTick(math.floor(tick), selectedChannel);
 				
@@ -298,6 +310,8 @@ function love.mousemoved( x, y, dx, dy, istouch )
 	local ptrn = songs[selectedSong].patterns[selectedPattern];
 	if not ptrn then return end
 	
+	local side; if selectedChannel == "noise" then side = SIDE_NOISE_WIDTH else side = SIDE_PIANO_WIDTH end
+	
 	-- left click and dragging: various functions
 	if love.mouse.isDown( 1 ) then	
 		if love.mouse.getY() > DIVIDER_POS then
@@ -332,7 +346,7 @@ function love.mousemoved( x, y, dx, dy, istouch )
 				updateSelection(SELECTION_P1X,SELECTION_P1Y,SELECTION_P2X,SELECTION_P2Y);
 			
 			-- dragging left and right in the side piano: zooms in and out the y axis of the piano roll
-			elseif love.mouse.getX() < SIDE_PIANO_WIDTH then
+			elseif love.mouse.getX() < side then
 				PIANOROLL_ZOOMY = PIANOROLL_ZOOMY + (dx / 2);
 				PIANOROLL_ZOOMY = math.max(10, PIANOROLL_ZOOMY);
 			
@@ -359,7 +373,7 @@ function love.mousemoved( x, y, dx, dy, istouch )
 			end
 			
 		-- regular note editing
-		elseif love.mouse.getX() > SIDE_PIANO_WIDTH then
+		elseif love.mouse.getX() > side then
 			-- if pencil mode, use pencil cursor by default
 			if PENCIL_MODE then love.mouse.setCursor(CURSOR_PENCIL) end
 			
@@ -515,7 +529,14 @@ function love.draw()
 	end
 	if selectedChannel == "noise" and ptrn then
 		love.graphics.setColor( CHANNEL_COLORS[selectedChannel] );
-		love.graphics.rectangle("fill",pianoroll_trax(0),DIVIDER_POS,pianoroll_trax(ptrn.noiseduration)-pianoroll_trax(0),PIANOROLL_TOPBAR_HEIGHT);
+		local width = pianoroll_trax(ptrn.noiseduration) - pianoroll_trax(0);
+		local endx  = pianoroll_trax(ptrn.noiseduration);
+		love.graphics.rectangle("fill",pianoroll_trax(0),DIVIDER_POS,width,PIANOROLL_TOPBAR_HEIGHT);
+		
+		love.graphics.setColor( 1,1,1 );
+		love.graphics.polygon("fill",endx,DIVIDER_POS,endx,DIVIDER_POS+PIANOROLL_TOPBAR_HEIGHT,endx-PIANOROLL_TOPBAR_HEIGHT,DIVIDER_POS + (PIANOROLL_TOPBAR_HEIGHT/2));
+		love.graphics.setColor( 0,0,0 );
+		love.graphics.polygon("line",endx,DIVIDER_POS,endx,DIVIDER_POS+PIANOROLL_TOPBAR_HEIGHT,endx-PIANOROLL_TOPBAR_HEIGHT,DIVIDER_POS + (PIANOROLL_TOPBAR_HEIGHT/2));
 	end
 	renderSidePiano();
 	
