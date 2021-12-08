@@ -89,7 +89,13 @@ function renderChannel( notes, color )
 		
 		if ( note.val ~= 04) then
 			love.graphics.rectangle( "fill", rectx, recty, rectwidth, PIANOROLL_ZOOMY )
-			love.graphics.setColor( 0,0,0 );
+			-- selected notes have a white outline
+			if (selectedNotes[i]) then
+				love.graphics.setColor( 1,1,1 );
+			-- otherwise black outline
+			else
+				love.graphics.setColor( 0,0,0 );
+			end
 			love.graphics.rectangle( "line", rectx, recty, rectwidth, PIANOROLL_ZOOMY )
 		end
 		

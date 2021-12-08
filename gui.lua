@@ -19,6 +19,8 @@ function initGUI()
 	PTRN_END_DRAGGING = false;
 	-- eelection rectangle (not the notes, just the position on the screen)
 	SELECTION_P1X = nil; SELECTION_P1Y = nil; SELECTION_P2X = nil; SELECTION_P2Y = nil;
+	-- the indices to the notes themselves
+	selectedNotes = {};
 	
 	-- string for editing
 	selectedTextEntry = nil;
@@ -38,23 +40,32 @@ function initGUI()
 	function GROUP_TOPBAR2:onUpdate()
 		self.width = WINDOW_WIDTH;
 	end
-	local prevsong = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"<S");
+	local prevsong = GuiElement.new(0,0,50,50,GROUP_TOPBAR2);
 	function prevsong:onClick()
 		selectSong((selectedSong - 1) % SONG_COUNT);	
+	end
+	function prevsong:onRender()
+		love.graphics.draw(IMG_PREVSONG, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
 	end
 	local currsong = GuiElement.new(0,0,300,50,GROUP_TOPBAR2);
 	function currsong:onUpdate()
 		self.text = songs[selectedSong].name;
 	end
-	local nextsong = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"S>");
+	local nextsong = GuiElement.new(0,0,50,50,GROUP_TOPBAR2);
 	function nextsong:onClick()
 		selectSong((selectedSong + 1) % SONG_COUNT);
 	end
+	function nextsong:onRender()
+		love.graphics.draw(IMG_NEXTSONG, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
+	end
 	
-	local prevptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"<P");
+	local prevptrn = GuiElement.new(0,0,50,50,GROUP_TOPBAR2);
 	function prevptrn:onClick()
 		local song = songs[selectedSong];
 		selectedPattern = ((selectedPattern - 1) % song.patternCount);	
+	end
+	function prevptrn:onRender()
+		love.graphics.draw(IMG_PREVPTRN, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
 	end
 	local currptrn = GuiElement.new(0,0,120,50,GROUP_TOPBAR2);
 	function currptrn:onUpdate()
@@ -64,11 +75,17 @@ function initGUI()
 	function currptrn:onClick()
 		openGUIWindow( GROUP_PNTR_EDIT );
 	end
-	local nextptrn = GuiElement.new(0,0,55,50,GROUP_TOPBAR2,"P>");
+	function currptrn:getEnabledCondition()
+		return rom.path ~= nil
+	end
+	local nextptrn = GuiElement.new(0,0,50,50,GROUP_TOPBAR2);
 	function nextptrn:onClick()
 		local song = songs[selectedSong];
 		selectedPattern = ((selectedPattern + 1) % song.patternCount);	
 	end 
+	function nextptrn:onRender()
+		love.graphics.draw(IMG_NEXTPTRN, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
+	end
 
 	-- TOPBAR 1: The main bar with the main functions File, Edit
 	GROUP_TOPBAR = GuiElement.new(0,0,500,3); GROUP_TOPBAR.autopos = "left"; GROUP_TOPBAR.autosizey = true;
@@ -99,7 +116,7 @@ function initGUI()
 		if PENCIL_MODE then self.bg_color = {0,0,0.5} else self.bg_color = {0,0,0} end
 	end
 	function pcl:onRender()
-		love.graphics.draw(TEXTURE_PENCIL, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
+		love.graphics.draw(IMG_PENCIL, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
 	end
 	local slc = GuiElement.new(0,0,54,54,GROUP_PIANOROLL_EDIT,"");
 	function slc:onClick()
@@ -109,7 +126,7 @@ function initGUI()
 		if not PENCIL_MODE then self.bg_color = {0,0,0.5} else self.bg_color = {0,0,0} end
 	end
 	function slc:onRender()
-		love.graphics.draw(TEXTURE_SELECT, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
+		love.graphics.draw(IMG_SELECT, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
 	end
 	local bytesavail = GuiElement.new(0,0,140,54,GROUP_PIANOROLL_EDIT,"");
 	function bytesavail:onUpdate()

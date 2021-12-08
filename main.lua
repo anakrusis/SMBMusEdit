@@ -16,8 +16,12 @@ function love.load()
 	selectedSong    = 0;
 	
 	love.graphics.setDefaultFilter("nearest");
-	TEXTURE_PENCIL = love.graphics.newImage("assets/pencil.png");
-	TEXTURE_SELECT = love.graphics.newImage("assets/select.png");
+	IMG_PENCIL = love.graphics.newImage("assets/pencil.png");
+	IMG_SELECT = love.graphics.newImage("assets/select.png");
+	IMG_PREVSONG   = love.graphics.newImage("assets/prevsong.png");
+	IMG_NEXTSONG   = love.graphics.newImage("assets/nextsong.png");
+	IMG_PREVPTRN   = love.graphics.newImage("assets/prevptrn.png");
+	IMG_NEXTPTRN   = love.graphics.newImage("assets/nextptrn.png");
 	CURSOR_PENCIL  = love.mouse.newCursor( "assets/pencil.png", 0, 15 )
 	
 	love.window.setTitle(VERSION_NAME);
@@ -251,6 +255,19 @@ function love.mousepressed( x,y,button )
 				-- it will also set the playhead if clicked somewhere
 				else
 					SELECTION_P1X = love.mouse.getX(); SELECTION_P1Y = love.mouse.getY()
+					
+					-- clicking an existing note in selection mode will select it
+					-- if shift is not held, then all other notes will be unselected except that one
+					-- otherwise, it will just be added on to the existing selection
+					if existingnote then
+						if not love.keyboard.isDown( "lshift" ) then
+							unselectNotes();
+						end
+						selectedNotes[ existingnote.noteindex ] = true;
+						return;
+					end
+					
+					unselectNotes();
 				end
 			end
 		end
@@ -312,6 +329,7 @@ function love.mousemoved( x, y, dx, dy, istouch )
 			elseif SELECTION_P1X then
 				SELECTION_P2X = love.mouse.getX(); SELECTION_P2Y = love.mouse.getY();
 				-- TODO select notes
+				updateSelection(SELECTION_P1X,SELECTION_P1Y,SELECTION_P2X,SELECTION_P2Y);
 			
 			-- dragging left and right in the side piano: zooms in and out the y axis of the piano roll
 			elseif love.mouse.getX() < SIDE_PIANO_WIDTH then
@@ -396,6 +414,32 @@ function love.update(dt)
 	PlaybackHandler:update();
 end
 
+function unselectNotes()
+	selectedNotes = {};
+	local ptrn = songs[selectedSong].patterns[selectedPattern];
+	local notes = ptrn:getNotes(selectedChannel);
+	for i = 0, #notes do
+		selectedNotes[i] = false;
+	end
+end
+
+function updateSelection(x1,y1,x2,y2)
+	local ptrn = songs[selectedSong].patterns[selectedPattern];
+	local notes = ptrn:getNotes(selectedChannel);
+	
+	local selectstarttime = math.min(piano_roll_untrax(x1),piano_roll_untrax(x2));
+	local selectendtime   = math.max(piano_roll_untrax(x1),piano_roll_untrax(x2));
+	
+	for i = 0, #notes do
+		local note = notes[i];
+		if note.starttime < selectendtime and note.starttime + note.duration >= selectstarttime then
+			selectedNotes[i] = true;
+		else
+			selectedNotes[i] = false;
+		end
+	end
+end
+
 function popupText(text,color)
 	-- this is to prevent the animation from continuing to retrigger
 	if (text ~= popup_text or popup_timer <= 0) then
@@ -418,6 +462,7 @@ function selectSong(index)
 	end
 	PATTERN_SCROLL = 0;
 	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0;
+	unselectNotes();
 end
 
 function selectPattern(song, index, chnl)
@@ -434,6 +479,7 @@ function selectPattern(song, index, chnl)
 	PlaybackHandler.setPattern = index;
 	
 	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0;
+	unselectNotes();
 end
 
 function love.draw()

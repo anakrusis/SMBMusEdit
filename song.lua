@@ -98,6 +98,8 @@ end
 Note = {
 	-- location in rom
 	rom_index = nil,
+	-- location in notes array of pattern
+	noteindex = nil,
 	starttime = 0,
 	duration = 0,
 	-- used to get the frequency from the timer table
