@@ -187,11 +187,49 @@ function love.keypressed(key)
 		-- makes rests out of all notes in selection
 		if key == "delete" then
 			local ptrn = songs[selectedSong].patterns[selectedPattern];
+			if not ptrn then return end
 			local notes = ptrn:getNotes(selectedChannel);
 			for i = 0, #notes do
 				if selectedNotes[i] then
 					local cn = notes[i];
 					ptrn:writePitch(cn.pitch,cn,selectedChannel);
+				end
+			end
+		end
+		
+		-- tranpose selection up a semitone
+		-- (shift+up = transpose up an octave)
+		if key == "up" then
+			local octavetranspose = love.keyboard.isDown("lshift");
+			local ptrn = songs[selectedSong].patterns[selectedPattern];
+			if not ptrn then return end
+			local notes = ptrn:getNotes(selectedChannel);
+			for i = 0, #notes do
+				if selectedNotes[i] then
+					local cn = notes[i];
+					if octavetranspose then
+						ptrn:writePitch(cn.pitch + 12,cn,selectedChannel);
+					else
+						ptrn:writePitch(cn.pitch + 1,cn,selectedChannel);
+					end
+				end
+			end
+		end
+		-- tranpose selection down a semitone
+		-- (shift+down = transpose down an octave)
+		if key == "down" then
+			local octavetranspose = love.keyboard.isDown("lshift");
+			local ptrn = songs[selectedSong].patterns[selectedPattern];
+			if not ptrn then return end
+			local notes = ptrn:getNotes(selectedChannel);
+			for i = 0, #notes do
+				if selectedNotes[i] then
+					local cn = notes[i];
+					if octavetranspose then
+						ptrn:writePitch(cn.pitch - 12,cn,selectedChannel);
+					else
+						ptrn:writePitch(cn.pitch - 1,cn,selectedChannel);
+					end
 				end
 			end
 		end

@@ -219,6 +219,7 @@ function initGUI()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
 		ptrn:clear();
+		GROUP_EDIT:hide(); openGUIWindow( GROUP_TOPBAR );
 	end
 	function ptredit:getEnabledCondition()
 		return rom.path ~= nil

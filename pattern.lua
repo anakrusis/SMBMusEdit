@@ -60,6 +60,9 @@ end
 -- clears all channel data of pattern except parts that overlap
 function Pattern:clear()
 	self:clearChannel("pulse2");
+	self:clearChannel("pulse1");
+	self:clearChannel("tri");
+	self:clearChannel("noise");
 end
 function Pattern:clearChannel(channel)
 	local si = self:getStartIndex(channel);
@@ -67,8 +70,13 @@ function Pattern:clearChannel(channel)
 	for i = si, ei do
 		rom.data[i].change = 0x04;
 	end
+	-- terminator at start of pattern
 	if channel == "pulse2" or channel == "noise" then
 		rom.data[si].change = 0x00;
+	end
+	-- triangle doesn't accept a terminating value but it needs a starting rhythm value in case the pattern is lengthened back, otherwise it will do weird things (and possibly crash?)
+	if channel == "tri" then
+		rom.data[si].change = 0x80;
 	end
 	rom:commitMarkers();
 	parseAllSongs();
