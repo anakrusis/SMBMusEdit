@@ -86,6 +86,25 @@ function initGUI()
 	function nextptrn:onRender()
 		love.graphics.draw(IMG_NEXTPTRN, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
 	end
+	
+	local play = GuiElement.new(0,0,50,50,GROUP_TOPBAR2);
+	function play:onClick()
+		PlaybackHandler:togglePlaying();
+		if not PlaybackHandler.playing then PlaybackHandler:togglePlaying(); end
+	end 
+	function play:onRender()
+		local padx = (self.width - 32) / 4;
+		love.graphics.draw(IMG_PLAY, self.dispx + padx, self.dispy + padx, 0, 2, 2);
+	end
+	local stop = GuiElement.new(0,0,50,50,GROUP_TOPBAR2);
+	function stop:onClick()
+		PlaybackHandler:togglePlaying();
+		if PlaybackHandler.playing then PlaybackHandler:togglePlaying(); end
+	end 
+	function stop:onRender()
+		local padx = (self.width - 32) / 4;
+		love.graphics.draw(IMG_STOP, self.dispx + padx, self.dispy + padx, 0, 2, 2);
+	end
 
 	-- TOPBAR 1: The main bar with the main functions File, Edit
 	GROUP_TOPBAR = GuiElement.new(0,0,500,3); GROUP_TOPBAR.autopos = "left"; GROUP_TOPBAR.autosizey = true;
@@ -108,7 +127,7 @@ function initGUI()
 		self.x = WINDOW_WIDTH - self.dispwidth - pad * 2;
 		self.y = DIVIDER_POS  + PIANOROLL_TOPBAR_HEIGHT + pad; 
 	end
-	local pcl = GuiElement.new(0,0,54,54,GROUP_PIANOROLL_EDIT,"");
+	local pcl = GuiElement.new(0,0,50,50,GROUP_PIANOROLL_EDIT,"");
 	function pcl:onClick()
 		PENCIL_MODE = true;
 	end
@@ -116,9 +135,10 @@ function initGUI()
 		if PENCIL_MODE then self.bg_color = {0,0,0.5} else self.bg_color = {0,0,0} end
 	end
 	function pcl:onRender()
-		love.graphics.draw(IMG_PENCIL, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
+		local padx = (self.width - 32) / 4;
+		love.graphics.draw(IMG_PENCIL, self.dispx + padx, self.dispy + padx, 0, 2, 2);
 	end
-	local slc = GuiElement.new(0,0,54,54,GROUP_PIANOROLL_EDIT,"");
+	local slc = GuiElement.new(0,0,50,50,GROUP_PIANOROLL_EDIT,"");
 	function slc:onClick()
 		PENCIL_MODE = false;
 	end
@@ -126,9 +146,10 @@ function initGUI()
 		if not PENCIL_MODE then self.bg_color = {0,0,0.5} else self.bg_color = {0,0,0} end
 	end
 	function slc:onRender()
-		love.graphics.draw(IMG_SELECT, self.dispx + self.padding, self.dispy + self.padding, 0, 2, 2);
+		local padx = (self.width - 32) / 4;
+		love.graphics.draw(IMG_SELECT, self.dispx + padx, self.dispy + padx, 0, 2, 2);
 	end
-	local bytesavail = GuiElement.new(0,0,140,54,GROUP_PIANOROLL_EDIT,"");
+	local bytesavail = GuiElement.new(0,0,140,50,GROUP_PIANOROLL_EDIT,"");
 	function bytesavail:onUpdate()
 		local song = songs[selectedSong];
 		local ptrn = song.patterns[selectedPattern];
@@ -189,6 +210,15 @@ function initGUI()
 	local ptredit = GuiElement.new(0,0,275,50,GROUP_EDIT,"Pointer Edit...");
 	function ptredit:onClick()
 		openGUIWindow( GROUP_PNTR_EDIT );
+	end
+	function ptredit:getEnabledCondition()
+		return rom.path ~= nil
+	end
+	local ptredit = GuiElement.new(0,0,275,50,GROUP_EDIT,"Clear Pattern");
+	function ptredit:onClick()
+		local song = songs[selectedSong];
+		local ptrn = song.patterns[selectedPattern];
+		ptrn:clear();
 	end
 	function ptredit:getEnabledCondition()
 		return rom.path ~= nil

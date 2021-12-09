@@ -93,8 +93,18 @@ function ROM:commitMarkers(startind, endind)
 			ind = ind + 1;
 		end
 		if cb.insert_after then
-			local newbyte = Byte:new{ val = cb.insert_after }
-			table.insert( self.data, ind + 1, newbyte )
+			-- can insert multiple bytes at a time with tables.
+			-- iterating backwards allows the index to remain the same and the order to be preserved (I think)
+			if (type(cb.insert_after) == "table") then
+				for q = #cb.insert_after, 1, -1 do
+					local newbyte = Byte:new{ val = cb.insert_after[q] }
+					table.insert( self.data, ind + 1, newbyte )
+				end
+			-- and can also do single bytes as numbers
+			else
+				local newbyte = Byte:new{ val = cb.insert_after }
+				table.insert( self.data, ind + 1, newbyte )
+			end
 			cb.insert_after = nil;
 		end
 		if cb.change then

@@ -22,6 +22,8 @@ function love.load()
 	IMG_NEXTSONG   = love.graphics.newImage("assets/nextsong.png");
 	IMG_PREVPTRN   = love.graphics.newImage("assets/prevptrn.png");
 	IMG_NEXTPTRN   = love.graphics.newImage("assets/nextptrn.png");
+	IMG_PLAY       = love.graphics.newImage("assets/play.png");
+	IMG_STOP       = love.graphics.newImage("assets/stop.png");
 	CURSOR_PENCIL  = love.mouse.newCursor( "assets/pencil.png", 0, 15 )
 	
 	love.window.setTitle(VERSION_NAME);
@@ -431,6 +433,7 @@ end
 function unselectNotes()
 	selectedNotes = {};
 	local ptrn = songs[selectedSong].patterns[selectedPattern];
+	if not ptrn then return end
 	local notes = ptrn:getNotes(selectedChannel);
 	for i = 0, #notes do
 		selectedNotes[i] = false;
@@ -477,6 +480,7 @@ function selectSong(index)
 	PATTERN_SCROLL = 0;
 	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0;
 	unselectNotes();
+	popup_timer = math.min(30,popup_timer);
 end
 
 function selectPattern(song, index, chnl)
@@ -494,6 +498,8 @@ function selectPattern(song, index, chnl)
 	
 	PIANOROLL_SCROLLX = 0; PIANOROLL_SCROLLY = 0;
 	unselectNotes();
+	
+	popup_timer = math.min(30,popup_timer);
 end
 
 function love.draw()

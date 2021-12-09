@@ -28,7 +28,7 @@ Pattern = {
 	starttime = 0,
 	-- based on the sum of all note lengths of pulse2, the lead channel. 
 	-- the unit of measure is game ticks 
-	duration = 0,
+	duration = nil,
 	noiseduration = 0,
 	-- just for visual reference, thats all
 	quarter_note_duration = 36,
@@ -55,6 +55,23 @@ function Pattern:new(o)
 	o.noise_notes  = {};
 	
 	return o
+end
+
+-- clears all channel data of pattern except parts that overlap
+function Pattern:clear()
+	self:clearChannel("pulse2");
+end
+function Pattern:clearChannel(channel)
+	local si = self:getStartIndex(channel);
+	local ei = si + self:getBytesAvailable(channel) - 1;
+	for i = si, ei do
+		rom.data[i].change = 0x04;
+	end
+	if channel == "pulse2" or channel == "noise" then
+		rom.data[si].change = 0x00;
+	end
+	rom:commitMarkers();
+	parseAllSongs();
 end
 
 function Pattern:changeEndpoint(tick, channel)
@@ -110,10 +127,6 @@ function Pattern:appendNote(midinote, tick, channel)
 	else
 		return;
 	end
-	-- if (channel == "tri") then
-		-- newval = PITCH_VALS[midinote + 12];
-	-- end
-	
 	if (not newval) then
 		popupText("Can't append unavailable pitch!", {1,1,1});
 		return; 
@@ -127,15 +140,24 @@ function Pattern:appendNote(midinote, tick, channel)
 	
 	local cb = rom.data[curind];
 	local cv = cb.val;
+	cb.insert_after = {}; -- trying out a new functionality for multiple-byte insertion
+	
+	-- pulse 2 requires a rhythm to be specified if this note is the first byte of the channel
+	if (channel == "pulse2") and curind == strt - 1 then
+		cb.insert_after = {0x80};
+		print( "0x80 inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
+		bytecost = bytecost + 1;
+	end
+	
 	print( "byte inserted after " .. string.format( "%02X",cv) .. " at $" .. string.format( "%04X",curind) );
 	
 	if (channel == "noise") then
 		local rhythm = bitwise.band(cv, 0xc1);     -- 1100 0001
 		local pitch  = bitwise.band(newval, 0x3e); -- 0011 1110
 		
-		cb.insert_after = rhythm + pitch;
+		table.insert(cb.insert_after, rhythm + pitch);
 	else
-		cb.insert_after = newval;
+		table.insert(cb.insert_after, newval);
 	end
 
 	if bytecost > self:getBytesAvailable(channel) - self:getBytesUsed(channel) then
@@ -150,6 +172,7 @@ function Pattern:appendNote(midinote, tick, channel)
 	PlaybackHandler:playPreview(newval);
 	rom:commitMarkers();
 	
+	-- TODO this can be simplified due to multiple-byte insertions implemented, doesn't require looping here anymore
 	for i = 0, math.abs(bytecost) - 1 do
 		if bytecost == 0 then break; end
 	
@@ -335,6 +358,7 @@ function Pattern:changeRhythm( tick, noteindex, channel )
 	-- This part appends on or removes unused bytes in queue for this channel, if needed
 	-- this maintains the internal size of the pattern so other pointers dont have to be changed with every edit
 	
+	-- TODO now that rom objects can insert multiple bytes at once, this can be simplified to not require a for loop
 	for i = 0, math.abs(bytecost) - 1 do
 		if bytecost == 0 then break; end
 	
@@ -650,7 +674,7 @@ function Pattern:parseNotes(start_index, target_table)
 		local val = rom:get(ind);
 		--print( string.format( "%02X", val ));
 		
-		if self.duration > 0 and duration >= self.duration then
+		if self.duration ~= nil and duration >= self.duration then
 			return duration;
 		end
 		
